@@ -131,6 +131,7 @@ function SGP30:readAQIBaselineFromFile()
 end
 
 function SGP30:writeAQIBaselineToFile()
+  -- todo: ignore baselines older than a week
   local eCO2, TVOC, eCO2Valid, TVOCValid = self:getIAQBaseline()
   if eCO2Valid and TVOCValid and file.open('sgp30_baseline.txt', 'w+') ~= nil then
     print('persisting baseline', eCO2, TVOC)
