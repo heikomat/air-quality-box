@@ -42,7 +42,7 @@ function updateDisplay(state)
       end
     end
   else
-    wifiStatus = 'wifi is connected :)'
+    wifiStatus = 'wifi: ' .. state.wifi.signalStrength .. ' %'
   end
 
   if wifiStatus ~= lastWifiStatus then
