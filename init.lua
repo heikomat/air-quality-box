@@ -14,7 +14,7 @@ function initWifi(callback)
       return false, nil
   end
 
-  print("connecting to wifi")
+  print('connecting to wifi')
   wifi.setmode(wifi.STATION)
   wifi.sta.config({ssid=ssid, pwd=password})
   wifi.sta.autoconnect(1)
@@ -42,14 +42,14 @@ function connectMqtt(callback)
       return false, nil
   end
 
-  print("connecting to mqtt server")
+  print('connecting to mqtt server')
   mqttClient=mqtt.Client(clientId, 60, username, password)
   mqttClient:connect(server, function(mqttClient)
-    print("connection to mqtt server established")
+    print('connection to mqtt server established')
     mqttIsConnected = true
     callback(mqttClient);
   end, function(mqttClient, reason)
-    print("mqtt connection failed")
+    print('mqtt connection failed')
   end)
 end
 
@@ -70,10 +70,10 @@ bme280.setup()
 sla = 0x3c
 display = u8g2.ssd1306_i2c_128x64_noname(0, sla)
 display:setFont(u8g2.font_6x10_tf)
-display:drawStr(0, 10, "temp    :")
-display:drawStr(0, 20, "pressure:")
-display:drawStr(0, 30, "humidity:")
-display:drawStr(0, 40, "TVOC    :")
+display:drawStr(0, 10, 'temp    :')
+display:drawStr(0, 20, 'pressure:')
+display:drawStr(0, 30, 'humidity:')
+display:drawStr(0, 40, 'TVOC    :')
 display:updateDisplayArea(0, 0, 16, 8)
 
 temperature = nil
@@ -86,7 +86,7 @@ tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)
 end)
 
 
-dofile("sgp30.lua")
+dofile('sgp30.lua')
 TVOC = nil
 sgp30 = SGP30:new(nil, nil, nil, function(eCO2, TVOCReadout)
   TVOC = TVOCReadout
@@ -94,27 +94,27 @@ end);
 
 wifiDots = 0
 lastRenderedPressure = 0
-lastWifiStatus = ""
+lastWifiStatus = ''
 
 tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)
   display:clearBuffer()
   if bmeReadingWasSuccessful then
-    display:drawStr(56, 10, temperature / 100 .. "C")
-    display:drawStr(56, 20, pressure / 1000 .. "hpa")
-    display:drawStr(56, 30, humidity / 1000 .. "%")
+    display:drawStr(56, 10, temperature / 100 .. 'C')
+    display:drawStr(56, 20, pressure / 1000 .. 'hpa')
+    display:drawStr(56, 30, humidity / 1000 .. '%')
     display:updateDisplayArea(7, 0, 9, 4)
   end
 
   if TVOC ~= nil then
-    display:drawStr(56, 40, TVOC .. "ppb") 
+    display:drawStr(56, 40, TVOC .. 'ppb') 
     display:updateDisplayArea(7, 4, 9, 1)
   end
 
-  local wifiStatus = "wifi is connected :)"
+  local wifiStatus = 'wifi is connected :)'
   if not wifiIsConnected then
-    wifiStatus = "wifi is connecting"
+    wifiStatus = 'wifi is connecting'
     for i=1,wifiDots do
-      wifiStatus = wifiStatus .. "."
+      wifiStatus = wifiStatus .. '.'
     end
     wifiDots = wifiDots + 1
     if wifiDots == 4 then
@@ -130,7 +130,17 @@ tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)
 end)
 
 tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)
-  if mqttIsConnected and bmeReadingWasSuccessful then
-    mqttClient:publish("air_quality", "{\"temperature\":\"" .. temperature / 100 .. " °C\",\n\"pressure\":\"" .. pressure / 1000 .. " hpa\",\n\"humidity\":\"" .. humidity / 1000 .. " %\"}", 0, 0)
+  if mqttIsConnected then
+    local data = ''
+    if bmeReadingWasSuccessful then
+      data = '"temperature":"' .. temperature / 100 .. ' °C",\n"pressure":"' .. pressure / 1000 .. ' hpa",\n"humidity":"' .. humidity / 1000 .. ' %"'
+    end
+    if TVOC ~= nil then
+      if data ~= '' then
+        data = data .. ',\n'
+      end
+      data = data .. '"TVOC":"' .. TVOC .. ' ppb"'
+    end
+    mqttClient:publish("air_quality", "{" .. data.. "}", 0, 0)
   end
 end)
