@@ -1,54 +1,81 @@
 sla = 0x3c
 display = u8g2.ssd1306_i2c_128x64_noname(0, sla)
 display:setFont(u8g2.font_6x10_tf)
-display:drawStr(0, 10, 'temp    :')
-display:drawStr(0, 20, 'pressure:')
-display:drawStr(0, 30, 'humidity:')
-display:drawStr(0, 40, 'TVOC    :')
-display:updateDisplayArea(0, 0, 16, 8)
 
-local lastState = {}
-wifiDots = 0
-lastWifiStatus = ''
+icons = {
+  nowifi = '',
+  temperature = '',
+  voc = '',
+  humidity = '',
+  wifi1 = '',
+  wifi2 = '',
+  wifi3 = '',
+  wifi4 = '',
+}
+
+for key, value in pairs(icons) do
+  print('loading ' .. key)
+  file.open(key .. '.bin', "r")
+  icons[key] = file.read()
+  file.close()
+end
+
+print(icons.wifi4)
 function updateDisplay(state)
 
   display:clearBuffer()
-  if state.sensors.temperature ~= nil then
-    display:drawStr(56, 10, state.sensors.temperature / 100 .. 'C')
+  if state.sensors.temperatureText ~= nil then
+    display:drawStr(16, 13, state.sensors.temperatureText)
+    display:updateDisplayArea(2, 0, 6, 2)
   end
-  if state.sensors.pressure ~= nil then
-    display:drawStr(56, 20, state.sensors.pressure / 1000 .. 'hpa')
+  if state.sensors.humidityText ~= nil then
+    display:drawStr(80, 13, state.sensors.humidityText)
+    display:updateDisplayArea(10, 0, 4, 2)
   end
-  if state.sensors.humidity ~= nil then
-    display:drawStr(56, 30, state.sensors.humidity / 1000 .. '%')
+  if state.sensors.pressureText ~= nil then
+    display:drawStr(16, 29, state.sensors.pressureText)
+    display:updateDisplayArea(2, 2, 6, 2)
   end
-  display:updateDisplayArea(7, 0, 9, 4)
+  if state.sensors.tvocText ~= nil then
+    display:drawStr(80, 29, state.sensors.tvocText)
+    display:updateDisplayArea(10, 2, 6, 2)
+  end
 
-  if state.sensors.tvoc ~= nil then
-    display:drawStr(56, 40, state.sensors.tvoc .. 'ppb') 
-    display:updateDisplayArea(7, 4, 9, 1)
-  end
+  drawWifiStatus(state)
+end
 
-  local wifiStatus = ''
+function drawStaticUI()
+  display:drawXBM(0, 0, 16, 16, icons.temperature)
+  display:drawXBM(64, 0, 16, 16, icons.humidity)
+  --display:drawXBM(0, 16, 16, 16, icons.pressure)
+  display:drawXBM(64, 16, 16, 16, icons.voc)
+  display:updateDisplayArea(0, 0, 16, 8)
+end
+
+wifiConnectingBlink = false
+function drawWifiStatus(newState)
   if not state.wifi.connected then
     if state.wifi.connecting then
-      wifiStatus = 'wifi is connecting'
-      for i=1,wifiDots do
-        wifiStatus = wifiStatus .. '.'
+      if wifiConnectingBlink then
+        display:drawXBM(112, 0, 16, 16, icons.wifi4)
       end
-      wifiDots = wifiDots + 1
-      if wifiDots == 4 then
-        wifiDots = 0
-      end
+      wifiConnectingBlink = not wifiConnectingBlink
+    else
+      display:drawXBM(112, 0, 16, 16, icons.nowifi)
     end
   else
-    wifiStatus = 'wifi: ' .. state.wifi.signalStrength .. ' %'
+    if state.wifi.signalStrength >= 75 then
+      display:drawXBM(112, 0, 16, 16, icons.wifi4)
+    elseif state.wifi.signalStrength >= 50 then
+      display:drawXBM(112, 0, 16, 16, icons.wifi3)
+    elseif state.wifi.signalStrength >= 25 then
+      display:drawXBM(112, 0, 16, 16, icons.wifi2)
+    else
+      display:drawXBM(112, 0, 16, 16, icons.wifi1)
+    end
   end
 
-  if wifiStatus ~= lastWifiStatus then
-    display:drawStr(0, 50, wifiStatus)
-    display:updateDisplayArea(0, 5, 16, 2)
-    lastWifiStatus = wifiStatus
-  end
-  lastState = state
+  display:updateDisplayArea(14, 0, 2, 2)
 end
+
+drawStaticUI()

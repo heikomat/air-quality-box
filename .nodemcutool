@@ -4,5 +4,5 @@
     "minify": false,
     "compile": false,
     "keeppath": false,
-    "connectionDelay": 50
+    "connectionDelay": 1000
 }

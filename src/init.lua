@@ -17,13 +17,18 @@ state = {
     connected = false,
   },
   sensors = {
-    temperature = nil,
-    pressure = nil,
-    humidity = nil,
-    tvoc = nil,
+    temperatureRaw = nil,
+    temperatureText = nil,
+    pressureRaw = nil,
+    pressureText = nil,
+    humidityRaw = nil,
+    humidityText = nil,
+    tvocRaw = nil,
+    tvocText = nil,
   }
 }
 
+dofile('tools.lua')
 dofile('wifi.lua')
 dofile('mqtt.lua')
 dofile('sgp30.lua')
@@ -41,13 +46,18 @@ end)
 
 tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)
   temperature, pressure, humidity = bme280.read()
-  state.sensors.temperature = temperature
-  state.sensors.pressure = pressure
-  state.sensors.humidity = humidity
+  state.sensors.temperatureRaw = temperature
+  state.sensors.pressureRaw = pressure
+  state.sensors.humidityRaw = humidity
+
+  state.sensors.temperatureText = temperature/ 100 .. 'C'
+  state.sensors.pressureText = round(pressure / 1000, 0) .. 'hpa'
+  state.sensors.humidityText = round(humidity / 1000, 1) .. '%'
 end)
 
 sgp30 = SGP30:new(nil, nil, nil, function(eCO2, TVOC)
-  state.sensors.tvoc = TVOC
+  state.sensors.tvocRaw = TVOC
+  state.sensors.tvocText = TVOC .. 'ppb'
 end);
 
 tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)
