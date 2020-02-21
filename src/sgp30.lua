@@ -25,7 +25,7 @@ function SGP30:new(busId, deviceAddress, iaqBaseline, iaqCallback)
   end)
 
   -- persist baseline once per hour
-  tmr.create():alarm(60000 , tmr.ALARM_AUTO, function(timer)
+  tmr.create():alarm(3600000 , tmr.ALARM_AUTO, function(timer)
     -- If we dont have an initial baseline, and 12 hours have passed (recommended
     -- time to determine a baseline), then store a new baseline
     if initialBaselineExists == false and (tmr.now() - self.initializedAt) >= 43200000000 then
@@ -114,6 +114,7 @@ function SGP30:setIAQBaseline(eCO2, TVOC)
   local eCO2CRC = self:calcCRC(eCO2)
   local TVOCCRC = self:calcCRC(TVOC)
   self:write({0x20, 0x1e, firstECO2Byte, secondECO2Byte, eCO2CRC, firstTVOCByte, secondTVOCByte, TVOCCRC})
+  print('baseline set', eCO2, TVOC)
 end
 
 function SGP30:readAQIBaselineFromFile()
