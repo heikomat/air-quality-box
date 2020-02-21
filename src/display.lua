@@ -11,16 +11,15 @@ icons = {
   wifi2 = '',
   wifi3 = '',
   wifi4 = '',
+  pressure = '',
 }
 
 for key, value in pairs(icons) do
-  print('loading ' .. key)
   file.open(key .. '.bin', "r")
   icons[key] = file.read()
   file.close()
 end
 
-print(icons.wifi4)
 function updateDisplay(state)
 
   display:clearBuffer()
@@ -47,7 +46,7 @@ end
 function drawStaticUI()
   display:drawXBM(0, 0, 16, 16, icons.temperature)
   display:drawXBM(64, 0, 16, 16, icons.humidity)
-  --display:drawXBM(0, 16, 16, 16, icons.pressure)
+  display:drawXBM(0, 16, 16, 16, icons.pressure)
   display:drawXBM(64, 16, 16, 16, icons.voc)
   display:updateDisplayArea(0, 0, 16, 8)
 end

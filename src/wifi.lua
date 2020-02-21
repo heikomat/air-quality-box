@@ -8,7 +8,6 @@ function initWifi(callback)
       return false
   end
 
-  print('connecting to wifi')
   wifi.setmode(wifi.STATION)
   wifi.sta.config({ssid=ssid, pwd=password})
   wifi.sta.autoconnect(1)

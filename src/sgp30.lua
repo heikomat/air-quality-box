@@ -20,7 +20,8 @@ function SGP30:new(busId, deviceAddress, iaqBaseline, iaqCallback)
     end
 
     if initFinished and eCO2Valid and TVOCValid then
-      iaqCallback(eCO2, TVOC)
+      local baselineCO2, baselineTVOC = self:getIAQBaseline()
+      iaqCallback(eCO2, TVOC, baselineCO2, baselineTVOC)
     end
   end)
 
@@ -114,11 +115,9 @@ function SGP30:setIAQBaseline(eCO2, TVOC)
   local eCO2CRC = self:calcCRC(eCO2)
   local TVOCCRC = self:calcCRC(TVOC)
   self:write({0x20, 0x1e, firstECO2Byte, secondECO2Byte, eCO2CRC, firstTVOCByte, secondTVOCByte, TVOCCRC})
-  print('baseline set', eCO2, TVOC)
 end
 
 function SGP30:readAQIBaselineFromFile()
-  print('loading from file')
   if file.open('sgp30_baseline.txt', 'r') ~= nil then
     local persistedValues = file.read(4)
     file.close()
@@ -135,7 +134,6 @@ function SGP30:writeAQIBaselineToFile()
   -- todo: ignore baselines older than a week
   local eCO2, TVOC, eCO2Valid, TVOCValid = self:getIAQBaseline()
   if eCO2Valid and TVOCValid and file.open('sgp30_baseline.txt', 'w+') ~= nil then
-    print('persisting baseline', eCO2, TVOC)
     local firstECO2Byte, secondECO2Byte = self:getBytesFromTwoByteNumber(eCO2)
     local firstTVOCByte, secondTVOCByte = self:getBytesFromTwoByteNumber(TVOC)
     file.write(string.char(firstECO2Byte, secondECO2Byte, firstTVOCByte, secondTVOCByte))

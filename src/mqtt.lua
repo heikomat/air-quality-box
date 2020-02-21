@@ -12,13 +12,9 @@ function connectMqtt(callback)
       return false
   end
 
-  print('connecting to mqtt server')
   mqttClient=mqtt.Client(clientId, 60, username, password)
   mqttClient:connect(server, function(mqttClient)
-    print('connection to mqtt server established')
     callback(mqttClient)
-  end, function(mqttClient, reason)
-    print('mqtt connection failed')
   end)
 
   return true

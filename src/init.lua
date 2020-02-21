@@ -25,10 +25,20 @@ state = {
     humidityText = nil,
     tvocRaw = nil,
     tvocText = nil,
-  }
+  },
+  debug = {
+    sgp30Baseline = {
+      eCO2 = nil,
+      TVOC = nil,
+    },
+  },
 }
 
-dofile('tools.lua')
+function round(num, numDecimalPlaces)
+  local mult = 10^(numDecimalPlaces or 0)
+  return math.floor(num * mult + 0.5) / mult
+end
+
 dofile('wifi.lua')
 dofile('mqtt.lua')
 dofile('sgp30.lua')
@@ -58,6 +68,8 @@ end)
 sgp30 = SGP30:new(nil, nil, nil, function(eCO2, TVOC)
   state.sensors.tvocRaw = TVOC
   state.sensors.tvocText = TVOC .. 'ppb'
+  state.debug.sgp30Baseline.eCO2 = eCO2
+  state.debug.sgp30Baseline.TVOC = TVOC
 end);
 
 tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)
@@ -66,7 +78,7 @@ end)
 
 tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)
   if state.mqtt.connected then
-    local jsonData = sjson.encoder(state.sensors):read()
+    local jsonData = sjson.encoder(state):read()
     publishMqtt("air_quality", jsonData)
   end
 end)
