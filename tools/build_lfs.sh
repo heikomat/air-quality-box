@@ -1,3 +1,5 @@
+# run this from the project root!
+
 rm -f src/LFS_*.img
 cd nodemcu-firmware
 docker run --rm -ti -v `pwd`:/opt/nodemcu-firmware -v `pwd`/../src:/opt/lua marcelstoer/nodemcu-build lfs-image
