@@ -56,13 +56,20 @@ end)
 
 tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)
   temperature, pressure, humidity = bme280.read()
-  state.sensors.temperatureRaw = temperature
-  state.sensors.pressureRaw = pressure
-  state.sensors.humidityRaw = humidity
+  if temperature ~= nil then
+    state.sensors.temperatureRaw = temperature
+    state.sensors.temperatureText = temperature/ 100 .. 'C'
+  end
 
-  state.sensors.temperatureText = temperature/ 100 .. 'C'
-  state.sensors.pressureText = round(pressure / 1000, 0) .. 'hpa'
-  state.sensors.humidityText = round(humidity / 1000, 1) .. '%'
+  if pressure ~= nil then
+    state.sensors.pressureRaw = pressure
+    state.sensors.pressureText = round(pressure / 1000, 0) .. 'hpa'
+  end
+
+  if humidity ~= nil then
+    state.sensors.humidityRaw = humidity
+    state.sensors.humidityText = round(humidity / 1000, 1) .. '%'
+  end
 end)
 
 sgp30 = SGP30:new(nil, nil, nil, function(eCO2, TVOC, eCO2Baseline, TVOCBaseline)
