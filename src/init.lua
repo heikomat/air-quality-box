@@ -65,11 +65,11 @@ tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)
   state.sensors.humidityText = round(humidity / 1000, 1) .. '%'
 end)
 
-sgp30 = SGP30:new(nil, nil, nil, function(eCO2, TVOC)
+sgp30 = SGP30:new(nil, nil, nil, function(eCO2, TVOC, eCO2Baseline, TVOCBaseline)
   state.sensors.tvocRaw = TVOC
   state.sensors.tvocText = TVOC .. 'ppb'
-  state.debug.sgp30Baseline.eCO2 = eCO2
-  state.debug.sgp30Baseline.TVOC = TVOC
+  state.debug.sgp30Baseline.eCO2 = eCO2Baseline
+  state.debug.sgp30Baseline.TVOC = TVOCBaseline
 end);
 
 tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)
