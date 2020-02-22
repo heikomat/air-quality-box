@@ -140,3 +140,19 @@ function SGP30:writeAQIBaselineToFile()
     file.close()
   end
 end
+
+function SGP30:setHumidityCompensation(temperature, relativeHumidity)
+  local absoluteHumidity = 216.7*(((relativeHumidity/100)*6.112*math.exp((17.62*temperature)/(243.12+temperature)))/(273.15+temperature))
+
+  local firstHumidtiyByte, secondHumidtiyByte = self:getBytesFromTwoByteNumber(absoluteHumidity)
+  local crc = self:calcCRC(absoluteHumidity)
+  self:write({0x20, 0x61, firstHumidtiyByte, secondHumidtiyByte, crc})
+end
+
+function SGP30:disableHumidityCompensation()
+  local absoluteHumidity = 0
+
+  local firstHumidtiyByte, secondHumidtiyByte = self:getBytesFromTwoByteNumber(absoluteHumidity)
+  local crc = self:calcCRC(absoluteHumidity)
+  self:write({0x20, 0x61, firstHumidtiyByte, secondHumidtiyByte, crc})
+end
