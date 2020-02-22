@@ -104,7 +104,7 @@ end)
 tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)
   if state.mqtt.connected then
     local jsonData = sjson.encoder(state):read()
-    publishMqtt("air_quality_box", jsonData)
+    publishMqtt("air_quality", jsonData, true)
   end
 end)
 

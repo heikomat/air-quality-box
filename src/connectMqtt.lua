@@ -1,7 +1,8 @@
 local mqttClient
+local clientId
 
 function connectMqtt(callback)
-  local server, clientId, username, password
+  local server, username, password
   if file.open('mqtt_credentials.txt') ~= nil then
     server = string.sub(file.readline(), 1, -2) -- to remove newline character
     clientId = string.sub(file.readline(), 1, -2) -- to remove newline character
@@ -20,7 +21,10 @@ function connectMqtt(callback)
   return true
 end
 
-function publishMqtt(channel, message)
+function publishMqtt(channel, message, suffixChannelWithClientId)
+  if suffixChannelWithClientId == true then
+    channel = channel .. '/' .. clientId
+  end
   mqttClient:publish(channel, message, 0, 0)
 end
 
