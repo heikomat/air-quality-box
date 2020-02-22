@@ -21,7 +21,7 @@ function SGP30:new(busId, deviceAddress, iaqCallback, getHumidityCompensationDat
   local nextBaselineSave = self.initializedAt + twelveHours
   local initialBaselineExists = self:readAQIBaselineFromFile()
   if initialBaselineExists then
-    nextBaselineSave = self.initializedAt + twelveHours
+    nextBaselineSave = self.initializedAt + oneHour
   end
 
   -- measure air quality once a scond
