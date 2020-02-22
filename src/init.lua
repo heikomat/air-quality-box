@@ -4,7 +4,7 @@ local pinSDA = 3
 local pinSCL = 6
 i2c.setup(0, pinSDA, pinSCL, i2c.SLOW)
 bme280.setup()
-
+print('Running')
 state = {
   wifi = {
     connecting = false,

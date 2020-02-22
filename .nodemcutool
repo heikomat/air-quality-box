@@ -1,8 +1,8 @@
 {
     "baudrate": "115200",
-    "port": "/dev/tty.usbserial-1440",
-    "minify": false,
+    "port": "/dev/ttyUSB0",
+    "minify": true,
     "compile": false,
     "keeppath": false,
-    "connectionDelay": 1000
+    "connectionDelay": 50
 }
