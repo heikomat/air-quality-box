@@ -24,3 +24,5 @@ function initWifi(callback)
 
   return true
 end
+
+return initWifi

@@ -1,10 +1,10 @@
 node.setcpufreq(node.CPU160MHZ)
 
-local pinSDA = 3
-local pinSCL = 6
+local pinSDA = 6
+local pinSCL = 5
 i2c.setup(0, pinSDA, pinSCL, i2c.SLOW)
 bme280.setup()
-print('Running')
+
 state = {
   wifi = {
     connecting = false,
@@ -39,8 +39,8 @@ function round(num, numDecimalPlaces)
   return math.floor(num * mult + 0.5) / mult
 end
 
-require 'wifi'
-require 'mqtt'
+initWifi = require 'initWifi'
+connectMqtt = require 'connectMqtt'
 require 'sgp30'
 require 'display'
 
@@ -86,7 +86,7 @@ end)
 tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)
   if state.mqtt.connected then
     local jsonData = sjson.encoder(state):read()
-    publishMqtt("air_quality", jsonData)
+    publishMqtt("air_quality_box", jsonData)
   end
 end)
 

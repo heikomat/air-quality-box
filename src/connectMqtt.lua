@@ -23,3 +23,6 @@ end
 function publishMqtt(channel, message)
   mqttClient:publish(channel, message, 0, 0)
 end
+
+
+return connectMqtt
