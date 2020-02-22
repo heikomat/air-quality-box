@@ -23,13 +23,17 @@ state = {
     pressureText = nil,
     humidityRaw = nil,
     humidityText = nil,
-    tvocRaw = nil,
-    tvocText = nil,
+    tvocppbRaw = nil,
+    tvocppbText = nil,
+    tvocmgm3Raw = nil,
+    tvocmgm3Text = nil,
   },
   debug = {
     sgp30Baseline = {
       eCO2 = nil,
       TVOC = nil,
+      secondsSinceLastSave = nil,
+      secondsTilNextSave = nil,
     },
   },
 }
@@ -58,7 +62,7 @@ tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)
   temperature, pressure, humidity = bme280.read()
   if temperature ~= nil then
     state.sensors.temperatureRaw = temperature
-    state.sensors.temperatureText = temperature/ 100 .. 'C'
+    state.sensors.temperatureText = temperature / 100 .. 'C'
   end
 
   if pressure ~= nil then
@@ -72,12 +76,26 @@ tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)
   end
 end)
 
-sgp30 = SGP30:new(nil, nil, nil, function(eCO2, TVOC, eCO2Baseline, TVOCBaseline)
-  state.sensors.tvocRaw = TVOC
-  state.sensors.tvocText = TVOC .. 'ppb'
+sgp30 = SGP30:new(nil, nil, function(eCO2, TVOCppb, TVOCmgm3, eCO2Baseline, TVOCBaseline, secondsSincaLastBaselineSave, secondsTilNextBaselineSave)
+  state.sensors.tvocppbRaw = TVOCppb
+  state.sensors.tvocppbText = TVOCppb .. 'ppb'
+
+  state.sensors.tvocmgm3Raw = TVOCmgm3
+  state.sensors.tvocmgm3Text = TVOCmgm3 .. 'mg/m3'
+
   state.debug.sgp30Baseline.eCO2 = eCO2Baseline
   state.debug.sgp30Baseline.TVOC = TVOCBaseline
-end);
+  state.debug.sgp30Baseline.secondsSincaLastSave = secondsSincaLastBaselineSave
+  state.debug.sgp30Baseline.secondsTilNextSave = secondsTilNextBaselineSave
+end, function()
+  if state.sensors.temperatureRaw == nil or state.sensors.humidityRaw == nil then
+    return nil, nil
+  end
+
+  local temperature = state.sensors.temperatureRaw / 100
+  local humidity = state.sensors.humidityRaw / 1000
+  return temperature, humidity
+end)
 
 tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)
   updateDisplay(state)

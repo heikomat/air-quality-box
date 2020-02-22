@@ -35,8 +35,8 @@ function updateDisplay(state)
     display:drawStr(16, 29, state.sensors.pressureText)
     display:updateDisplayArea(2, 2, 6, 2)
   end
-  if state.sensors.tvocText ~= nil then
-    display:drawStr(80, 29, state.sensors.tvocText)
+  if state.sensors.tvocmgm3Text ~= nil then
+    display:drawStr(80, 29, state.sensors.tvocmgm3Text)
     display:updateDisplayArea(10, 2, 6, 2)
   end
 

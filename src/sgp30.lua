@@ -1,27 +1,51 @@
 SGP30 = {}
 
-function SGP30:new(busId, deviceAddress, iaqBaseline, iaqCallback)
+function exp(exponent)
+  return 2.7182818284590^exponent
+end
+
+function SGP30:new(busId, deviceAddress, iaqCallback, getHumidityCompensationDataCallback)
   setmetatable({}, self)
   self.__index = self
   self.busId = busId or 0
   self.deviceAddress = deviceAddress or 0x58
 
   self:initIAQ()
-  self.initializedAt = tmr.now()
+  self:updateHumidityCompensation(getHumidityCompensationDataCallback)
+  self.initializedAt = math.floor(tmr.now() / 1000000) --seconds are accurate enough
+
+  local oneHour = 3600
+  local twelveHours = oneHour * 12
+
+  local lastBaselineSave = nil
+  local nextBaselineSave = self.initializedAt + twelveHours
   local initialBaselineExists = self:readAQIBaselineFromFile()
+  if initialBaselineExists then
+    nextBaselineSave = self.initializedAt + twelveHours
+  end
 
   -- measure air quality once a scond
   local initFinished = false
   tmr.create():alarm(1000 , tmr.ALARM_AUTO, function(timer)
     tmr.delay(10000)
-    local eCO2, TVOC, eCO2Valid, TVOCValid = self:measureIAQ()
-    if initFinished == false and eCO2Valid and TVOCValid and (eCO2 > 400 or TVOC > 0) then
+    local eCO2, TVOCppb, eCO2Valid, TVOCValid = self:measureIAQ()
+    self:updateHumidityCompensation(getHumidityCompensationDataCallback)
+    if initFinished == false and eCO2Valid and TVOCValid and (eCO2 > 400 or TVOCppb > 0) then
       initFinished = true
     end
 
     if initFinished and eCO2Valid and TVOCValid then
-      local baselineCO2, baselineTVOC = self:getIAQBaseline()
-      iaqCallback(eCO2, TVOC, baselineCO2, baselineTVOC)
+      baselineCO2, baselineTVOC = self:getIAQBaseline()
+      TVOCmgm3 = TVOCppb / 218.77 -- see https://forum.digikey.com/t/sensirion-gas-sensors-faq/5205
+      
+      local now = math.floor(tmr.now() / 1000000)
+      local secondsSinceLastSave = nil
+      local secondsTilNextSave = nextBaselineSave - now
+      if lastBaselineSave ~= nil then
+        secondsSinceLastSave = now - lastBaselineSave
+      end
+
+      iaqCallback(eCO2, TVOCppb, TVOCmgm3, baselineCO2, baselineTVOC, secondsSinceLastSave, secondsTilNextSave)
     end
   end)
 
@@ -29,11 +53,13 @@ function SGP30:new(busId, deviceAddress, iaqBaseline, iaqCallback)
   tmr.create():alarm(3600000 , tmr.ALARM_AUTO, function(timer)
     -- If we dont have an initial baseline, and 12 hours have passed (recommended
     -- time to determine a baseline), then store a new baseline
-    if initialBaselineExists == false and (tmr.now() - self.initializedAt) >= 43200000000 then
+    if initialBaselineExists == false and (math.floor(tmr.now() / 1000000) - self.initializedAt) >= twelveHours then
       initialBaselineExists = true
     end
 
     if initialBaselineExists then
+      lastBaselineSave = math.floor(tmr.now() / 1000000)
+      nextBaselineSave = lastBaselineSave + oneHour
       self:writeAQIBaselineToFile()
     end
   end)
@@ -62,6 +88,15 @@ function SGP30:getBytesFromTwoByteNumber(twoByteNumber)
   local firstByte = bit.rshift(bit.band(twoByteNumber, 0xff00), 8)
   local secondByte = bit.band(twoByteNumber, 0x00ff)
   return firstByte, secondByte
+end
+
+function SGP30:getBytesFromFloat(floatNumber)
+  local partBeforeDecimalPoint = math.floor(floatNumber)
+  local partAfterDecimalPoint = floatNumber - partBeforeDecimalPoint
+
+  local firstByte = partBeforeDecimalPoint
+  local secondByte = bit.band(math.floor(partAfterDecimalPoint * 256), 0xff)
+  return partBeforeDecimalPoint, secondByte
 end
 
 function SGP30:calcCRC(twoByteNumber)
@@ -141,10 +176,21 @@ function SGP30:writeAQIBaselineToFile()
   end
 end
 
-function SGP30:setHumidityCompensation(temperature, relativeHumidity)
-  local absoluteHumidity = 216.7*(((relativeHumidity/100)*6.112*math.exp((17.62*temperature)/(243.12+temperature)))/(273.15+temperature))
+function SGP30:updateHumidityCompensation(getHumidityCompensationDataCallback)
+  if getHumidityCompensationDataCallback == nil then
+    return
+  end
 
-  local firstHumidtiyByte, secondHumidtiyByte = self:getBytesFromTwoByteNumber(absoluteHumidity)
+  local temperature, relativeHumidity = getHumidityCompensationDataCallback()
+  if temperature ~= nil and relativeHumidity ~= nil then
+    SGP30:setHumidityCompensation(temperature, relativeHumidity)
+  end
+end
+
+function SGP30:setHumidityCompensation(temperature, relativeHumidity)
+  local absoluteHumidity = 216.7*(((relativeHumidity/100)*6.112 * exp((17.62*temperature)/(243.12+temperature)))/(273.15+temperature))
+
+  local firstHumidtiyByte, secondHumidtiyByte = self:getBytesFromFloat(absoluteHumidity)
   local crc = self:calcCRC(absoluteHumidity)
   self:write({0x20, 0x61, firstHumidtiyByte, secondHumidtiyByte, crc})
 end
@@ -152,7 +198,7 @@ end
 function SGP30:disableHumidityCompensation()
   local absoluteHumidity = 0
 
-  local firstHumidtiyByte, secondHumidtiyByte = self:getBytesFromTwoByteNumber(absoluteHumidity)
+  local firstHumidtiyByte, secondHumidtiyByte = self:getBytesFromFloat(absoluteHumidity)
   local crc = self:calcCRC(absoluteHumidity)
   self:write({0x20, 0x61, firstHumidtiyByte, secondHumidtiyByte, crc})
 end
