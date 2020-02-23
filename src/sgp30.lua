@@ -27,7 +27,6 @@ function SGP30:new(busId, deviceAddress, iaqCallback, getHumidityCompensationDat
   -- measure air quality once a scond
   local initFinished = false
   tmr.create():alarm(1000 , tmr.ALARM_AUTO, function(timer)
-    tmr.delay(10000)
     local eCO2, TVOCppb, eCO2Valid, TVOCValid = self:measureIAQ()
     self:updateHumidityCompensation(getHumidityCompensationDataCallback)
     if initFinished == false and eCO2Valid and TVOCValid and (eCO2 > 400 or TVOCppb > 0) then
@@ -190,15 +189,21 @@ end
 function SGP30:setHumidityCompensation(temperature, relativeHumidity)
   local absoluteHumidity = 216.7*(((relativeHumidity/100)*6.112 * exp((17.62*temperature)/(243.12+temperature)))/(273.15+temperature))
 
+  absoluteHumidity = 70.58
+  -- the first byte represents the part in front of the decimal point.
+  -- the second byte represents the part after the decimal point.
+  -- to correctly take both bytes into account when calculating the crc we need to
+  -- act as if though these were the two bytes of a 16-bit integer, because calcCRC
+  -- expects a 16bit integer, not a float
   local firstHumidtiyByte, secondHumidtiyByte = self:getBytesFromFloat(absoluteHumidity)
-  local crc = self:calcCRC(absoluteHumidity)
+  local crc = self:calcCRC(self:TwoBytesToNumber(firstHumidtiyByte, secondHumidtiyByte))
   self:write({0x20, 0x61, firstHumidtiyByte, secondHumidtiyByte, crc})
 end
 
 function SGP30:disableHumidityCompensation()
-  local absoluteHumidity = 0
+  local absoluteHumidity = 0.0
 
   local firstHumidtiyByte, secondHumidtiyByte = self:getBytesFromFloat(absoluteHumidity)
-  local crc = self:calcCRC(absoluteHumidity)
+  local crc = self:calcCRC(self:TwoBytesToNumber(absoluteHumidity))
   self:write({0x20, 0x61, firstHumidtiyByte, secondHumidtiyByte, crc})
 end
