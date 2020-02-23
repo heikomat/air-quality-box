@@ -24,6 +24,9 @@ function SGP30:new(busId, deviceAddress, iaqCallback, getHumidityCompensationDat
     nextBaselineSave = self.initializedAt + oneHour
   end
 
+  local lastBaselineSaveWasSuccessful = nil
+  local lastBaselineSaveResult = nil
+
   -- measure air quality once a scond
   local initFinished = false
   tmr.create():alarm(1000 , tmr.ALARM_AUTO, function(timer)
@@ -44,12 +47,12 @@ function SGP30:new(busId, deviceAddress, iaqCallback, getHumidityCompensationDat
         secondsSinceLastSave = now - lastBaselineSave
       end
 
-      iaqCallback(eCO2, TVOCppb, TVOCmgm3, baselineCO2, baselineTVOC, secondsSinceLastSave, secondsTilNextSave)
+      iaqCallback(eCO2, TVOCppb, TVOCmgm3, baselineCO2, baselineTVOC, secondsSinceLastSave, secondsTilNextSave, lastBaselineSaveWasSuccessful, lastBaselineSaveResult)
     end
   end)
 
   -- persist baseline once per hour
-  tmr.create():alarm(3600000 , tmr.ALARM_AUTO, function(timer)
+  tmr.create():alarm(oneHour * 1000 , tmr.ALARM_AUTO, function(timer)
     -- If we dont have an initial baseline, and 12 hours have passed (recommended
     -- time to determine a baseline), then store a new baseline
     if initialBaselineExists == false and (math.floor(tmr.now() / 1000000) - self.initializedAt) >= twelveHours then
@@ -59,7 +62,7 @@ function SGP30:new(busId, deviceAddress, iaqCallback, getHumidityCompensationDat
     if initialBaselineExists then
       lastBaselineSave = math.floor(tmr.now() / 1000000)
       nextBaselineSave = lastBaselineSave + oneHour
-      self:writeAQIBaselineToFile()
+      lastBaselineSaveWasSuccessful, lastBaselineSaveResult = self:writeAQIBaselineToFile()
     end
   end)
 end
@@ -152,9 +155,10 @@ function SGP30:setIAQBaseline(eCO2, TVOC)
 end
 
 function SGP30:readAQIBaselineFromFile()
-  if file.open('sgp30_baseline.txt', 'r') ~= nil then
-    local persistedValues = file.read(4)
-    file.close()
+  local fd = file.open('sgp30_baseline.txt', 'r')
+  if fd ~= nil then
+    local persistedValues = fd:read(4)
+    fd:close()
     local eCO2 = self:TwoBytesToNumber(string.byte(persistedValues, 1), string.byte(persistedValues, 2))
     local TVOC = self:TwoBytesToNumber(string.byte(persistedValues, 3), string.byte(persistedValues, 4))
     self:setIAQBaseline(eCO2, TVOC)
@@ -167,12 +171,46 @@ end
 function SGP30:writeAQIBaselineToFile()
   -- todo: ignore baselines older than a week
   local eCO2, TVOC, eCO2Valid, TVOCValid = self:getIAQBaseline()
-  if eCO2Valid and TVOCValid and file.open('sgp30_baseline.txt', 'w+') ~= nil then
-    local firstECO2Byte, secondECO2Byte = self:getBytesFromTwoByteNumber(eCO2)
-    local firstTVOCByte, secondTVOCByte = self:getBytesFromTwoByteNumber(TVOC)
-    file.write(string.char(firstECO2Byte, secondECO2Byte, firstTVOCByte, secondTVOCByte))
-    file.close()
+  if eCO2Valid == false or TVOCValid == false then
+    return false, 'baseline reading invalid'
   end
+
+  local firstECO2Byte, secondECO2Byte = self:getBytesFromTwoByteNumber(eCO2)
+  local firstTVOCByte, secondTVOCByte = self:getBytesFromTwoByteNumber(TVOC)
+  local baselineBytes = string.char(firstECO2Byte, secondECO2Byte, firstTVOCByte, secondTVOCByte)
+
+  fdWrite = file.open('sgp30_baseline.txt', 'w+')
+  if fdWrite == nil then
+    return false, 'couldnt open sgp30_baseline.txt for writing'
+  end
+
+  local writeSuccessful = fdWrite:write(string.char(firstECO2Byte, secondECO2Byte, firstTVOCByte, secondTVOCByte))
+  fdWrite:close()
+
+  if writeSuccessful ~= true then
+    return false, 'writing baseline to file failed'
+  end
+
+  -- validate the baseline was persisted correctly
+  local fdRead = file.open('sgp30_baseline.txt', 'r')
+  if fdRead == nil then
+    return false, 'couldnt open sgp30_baseline.txt for reading'
+  end
+
+  local persistedValues = fdRead:read(4)
+  fdRead:close()
+
+  if persistedValues ~= baselineBytes then
+    return false, 'read baseline bytestring does not match persisted baseline bytestring'
+  end
+
+  local readeCO2 = self:TwoBytesToNumber(string.byte(persistedValues, 1), string.byte(persistedValues, 2))
+  local readTVOC = self:TwoBytesToNumber(string.byte(persistedValues, 3), string.byte(persistedValues, 4))
+  if readeCO2 ~= eCO2 or readTVOC ~= TVOC then
+    return false, 'baselineValues from file do not match baselineValues from sensor reading. sensoreCO2: '..eCO2..', sensorTVOC: '..TVOC..', fileeCO2: '..readeCO2..', fileTVOC: '..readTVOC
+  end
+
+  return true, 'baseline sucessfully saved'
 end
 
 function SGP30:updateHumidityCompensation(getHumidityCompensationDataCallback)

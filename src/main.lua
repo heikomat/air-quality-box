@@ -34,6 +34,8 @@ state = {
       TVOC = nil,
       secondsSinceLastSave = nil,
       secondsTilNextSave = nil,
+      lastSaveWasSuccessful = nil,
+      lastSaveResult = nil,
     },
   },
 }
@@ -76,7 +78,7 @@ tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)
   end
 end)
 
-sgp30 = SGP30:new(nil, nil, function(eCO2, TVOCppb, TVOCmgm3, eCO2Baseline, TVOCBaseline, secondsSincaLastBaselineSave, secondsTilNextBaselineSave)
+sgp30 = SGP30:new(nil, nil, function(eCO2, TVOCppb, TVOCmgm3, eCO2Baseline, TVOCBaseline, secondsSincaLastBaselineSave, secondsTilNextBaselineSave, lastBaselineSaveWasSuccessful, lastBaselineSaveResult)
   state.sensors.tvocppbRaw = TVOCppb
   state.sensors.tvocppbText = TVOCppb .. 'ppb'
 
@@ -87,6 +89,8 @@ sgp30 = SGP30:new(nil, nil, function(eCO2, TVOCppb, TVOCmgm3, eCO2Baseline, TVOC
   state.debug.sgp30Baseline.TVOC = TVOCBaseline
   state.debug.sgp30Baseline.secondsSincaLastSave = secondsSincaLastBaselineSave
   state.debug.sgp30Baseline.secondsTilNextSave = secondsTilNextBaselineSave
+  state.debug.sgp30Baseline.lastSaveWasSuccessful = lastBaselineSaveWasSuccessful
+  state.debug.sgp30Baseline.lastSaveResult = lastBaselineSaveResult
 end, function()
   if state.sensors.temperatureRaw == nil or state.sensors.humidityRaw == nil then
     return nil, nil
