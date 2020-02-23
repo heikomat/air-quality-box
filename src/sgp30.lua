@@ -201,7 +201,7 @@ function SGP30:writeAQIBaselineToFile()
   fdRead:close()
 
   if persistedValues ~= baselineBytes then
-    return false, 'read baseline bytestring does not match persisted baseline bytestring'
+    return false, 'read baseline bytestring does not match persisted baseline bytestring. baselineBytes: "'..baselineBytes..'", persistedBytes: "'..persistedValues..'"'
   end
 
   local readeCO2 = self:TwoBytesToNumber(string.byte(persistedValues, 1), string.byte(persistedValues, 2))
