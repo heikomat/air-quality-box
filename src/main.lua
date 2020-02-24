@@ -18,10 +18,13 @@ state = {
   },
   sensors = {
     temperatureRaw = nil,
+    temperatureCelsius = nil,
     temperatureText = nil,
     pressureRaw = nil,
+    pressureHPa = nil,
     pressureText = nil,
     humidityRaw = nil,
+    humidityPercent = nil,
     humidityText = nil,
     tvocppbRaw = nil,
     tvocppbText = nil,
@@ -38,15 +41,29 @@ state = {
       lastSaveResult = nil,
     },
   },
+  iaq = {
+    summary = {
+      averageScore = nil,
+      minScore = nil,
+      maxScore = nil,
+      text = nil,
+    },
+    recommendations = nil,
+    sensorScores = {
+      temperature = nil,
+      humidity = nil,
+      tvoc = nil,
+      co2 = nil,
+      pm2_5 = nil,
+      pm10 = nil,
+    }
+  }
 }
-
-function round(num, numDecimalPlaces)
-  local mult = 10^(numDecimalPlaces or 0)
-  return math.floor(num * mult + 0.5) / mult
-end
 
 initWifi = require 'initWifi'
 connectMqtt = require 'connectMqtt'
+updateIaq = require 'iaq'
+require 'tools'
 require 'sgp30'
 require 'display'
 
@@ -64,17 +81,20 @@ tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)
   temperature, pressure, humidity = bme280.read()
   if temperature ~= nil then
     state.sensors.temperatureRaw = temperature
-    state.sensors.temperatureText = temperature / 100 .. 'C'
+    state.sensors.temperatureCelsius = state.sensors.temperatureRaw / 100
+    state.sensors.temperatureText =  state.sensors.temperatureCelsius .. 'C'
   end
 
   if pressure ~= nil then
     state.sensors.pressureRaw = pressure
-    state.sensors.pressureText = round(pressure / 1000, 0) .. 'hpa'
+    state.sensors.pressureHPa = round(state.sensors.pressureRaw / 1000, 0)
+    state.sensors.pressureText = state.sensors.pressureHPa .. 'hpa'
   end
 
   if humidity ~= nil then
     state.sensors.humidityRaw = humidity
-    state.sensors.humidityText = round(humidity / 1000, 1) .. '%'
+    state.sensors.humidityPercent = round(state.sensors.humidityRaw / 1000, 1)
+    state.sensors.humidityText = state.sensors.humidityPercent .. '%'
   end
 end)
 
@@ -106,6 +126,10 @@ tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)
 end)
 
 tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)
+  calculateIaq(state.sensors, state.iaq)
+end)
+
+tmr.create():alarm(5000 , tmr.ALARM_AUTO, function(timer)
   if state.mqtt.connected then
     local jsonData = sjson.encoder(state):read()
     publishMqtt("air_quality", jsonData, true)
