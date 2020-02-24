@@ -1,5 +1,7 @@
 require 'tools'
 
+-- see the iaq rating index from IAQUK.org.uk for more info:
+-- http://www.iaquk.org.uk/ESW/Files/IAQ_Rating_Index.pdf
 function calculateIaq(sensors, iaq)
   iaq.recommendations = {}
   local airQualityScores = {}
