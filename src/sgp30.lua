@@ -55,7 +55,8 @@ function SGP30:new(busId, deviceAddress, iaqCallback, getHumidityCompensationDat
   tmr.create():alarm(oneHour * 1000 , tmr.ALARM_AUTO, function(timer)
     -- If we dont have an initial baseline, and 12 hours have passed (recommended
     -- time to determine a baseline), then store a new baseline
-    if initialBaselineExists == false and (math.floor(tmr.now() / 1000000) - self.initializedAt) >= twelveHours then
+    local now = math.floor(tmr.now() / 1000000)
+    if initialBaselineExists == false and (now - self.initializedAt) >= twelveHours then
       initialBaselineExists = true
     end
 

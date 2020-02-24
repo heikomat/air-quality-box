@@ -9,9 +9,9 @@ function calculateIaq(sensors, iaq)
   -- temperature evaluation
   if sensors.temperatureCelsius ~= nil then
     if sensors.temperatureCelsius < 18 then
-      iaq.sensorScores.temperature = valueToScore(math.max(sensors.temperatureCelsius - 18, 1))
+      iaq.sensorScores.temperature = valueToScore(math.max(5 - (18 - sensors.temperatureCelsius), 1))
     elseif sensors.temperatureCelsius > 21 then
-      iaq.sensorScores.temperature = valueToScore(math.max(21 - sensors.temperatureCelsius, 1))
+      iaq.sensorScores.temperature = valueToScore(math.max(5 - (sensors.temperatureCelsius - 21), 1))
     else
       iaq.sensorScores.temperature = valueToScore(5)
     end
@@ -26,6 +26,29 @@ function calculateIaq(sensors, iaq)
       table.insert(iaq.recommendations, "It's really hot! Try to cool the room if you can")
     elseif sensors.temperatureCelsius > 23 then
       table.insert(iaq.recommendations, "Kinda warm in here. Consider cooling the room if possible")
+    end
+  end
+
+  -- humidity evaluation
+  if sensors.humidityPercent ~= nil then
+    if sensors.humidityPercent <= 40 then
+      iaq.sensorScores.humidity = valueToScore(math.max(5 - ((40 - sensors.humidityPercent) / 10), 1))
+    elseif sensors.humidityPercent > 60 then
+      iaq.sensorScores.humidity = valueToScore(math.max(5 - ((sensors.humidityPercent - 60) / 10), 1))
+    else
+      iaq.sensorScores.humidity = valueToScore(5)
+    end
+
+    table.insert(airQualityScores, iaq.sensorScores.humidity)
+
+    if sensors.humidityPercent < 10 then
+      table.insert(iaq.recommendations, "The air is super dry! Get a humidifier now!")
+    elseif sensors.humidityPercent < 30 then
+      table.insert(iaq.recommendations, "The air is pretty dry. Consider humidifying it.")
+    elseif sensors.humidityPercent > 90 then
+      table.insert(iaq.recommendations, "The air is super wet! Open a window to let the water out!")
+    elseif sensors.humidityPercent > 70 then
+      table.insert(iaq.recommendations, "It's pretty humid. You should open a window for some airflow.")
     end
   end
 
@@ -80,13 +103,13 @@ function calculateIaq(sensors, iaq)
   
   iaq.summary.averageScore = round(sumScore / table.getn(airQualityScores), 2)
 
-  if iaq.summary.maxScore > 4 then
+  if iaq.summary.minScore > 4 then
     iaq.summary.text = "The air here is excellent! :D"
-  elseif iaq.summary.maxScore > 3 then
+  elseif iaq.summary.minScore > 3 then
     iaq.summary.text = "The air here is quite good :)"
-  elseif iaq.summary.maxScore > 2 then
+  elseif iaq.summary.minScore > 2 then
     iaq.summary.text = "The air here is ok i guess"
-  elseif iaq.summary.maxScore > 1 then
+  elseif iaq.summary.minScore > 1 then
     iaq.summary.text = "The air here is pretty poor"
   else
     iaq.summary.text = "The air here is really bad! Do something! >:("
