@@ -9,9 +9,9 @@ function calculateIaq(sensors, iaq)
   -- temperature evaluation
   if sensors.temperatureCelsius ~= nil then
     if sensors.temperatureCelsius < 18 then
-      iaq.sensorScores.temperature = valueToScore(math.max(5 - (18 - sensors.temperatureCelsius), 1))
+      iaq.sensorScores.temperature = valueToScore(math.max(5 - (18 - sensors.temperatureCelsius), 0))
     elseif sensors.temperatureCelsius > 21 then
-      iaq.sensorScores.temperature = valueToScore(math.max(5 - (sensors.temperatureCelsius - 21), 1))
+      iaq.sensorScores.temperature = valueToScore(math.max(5 - (sensors.temperatureCelsius - 21), 0))
     else
       iaq.sensorScores.temperature = valueToScore(5)
     end
@@ -32,9 +32,9 @@ function calculateIaq(sensors, iaq)
   -- humidity evaluation
   if sensors.humidityPercent ~= nil then
     if sensors.humidityPercent <= 40 then
-      iaq.sensorScores.humidity = valueToScore(math.max(5 - ((40 - sensors.humidityPercent) / 10), 1))
+      iaq.sensorScores.humidity = valueToScore(math.max(5 - ((40 - sensors.humidityPercent) / 10), 0))
     elseif sensors.humidityPercent > 60 then
-      iaq.sensorScores.humidity = valueToScore(math.max(5 - ((sensors.humidityPercent - 60) / 10), 1))
+      iaq.sensorScores.humidity = valueToScore(math.max(5 - ((sensors.humidityPercent - 60) / 10), 0))
     else
       iaq.sensorScores.humidity = valueToScore(5)
     end
@@ -52,36 +52,28 @@ function calculateIaq(sensors, iaq)
     end
   end
 
-  -- tvoc evaluation
-  if sensors.tvocmgm3Raw ~= nil then
-    minPoints = nil
-    minPointRangeValue = nil
-    maxPointRangeValue = nil
-    if sensors.tvocmgm3Raw < 0.1 then
-      minPoints = 5
-    elseif sensors.tvocmgm3Raw <= 0.3 then
-      minPoints = 4
-      minPointRangeValue = 0.1
-      maxPointRangeValue = 0.3
-    elseif sensors.tvocmgm3Raw <= 0.5 then
-      minPoints = 3
-      minPointRangeValue = 0.3
-      maxPointRangeValue = 0.5
-      table.insert(iaq.recommendations, "The air isn't really the freshest. You might want to open a window")
-    elseif sensors.tvocmgm3Raw <= 1.0 then
-      minPoints = 2
-      minPointRangeValue = 0.5
-      maxPointRangeValue = 1.0
-      table.insert(iaq.recommendations, "The air isn't really the freshest. You might want to open a window")
-    else
-      minPoints = 1
-      table.insert(iaq.recommendations, "The air is really polluted. Open a window now!")
+  -- tvoc evaluation (see https://www.repcomsrl.com/wp-content/uploads/2017/06/Environmental_Sensing_VOC_Product_Brochure_EN.pdf )
+  if sensors.tvocppbRaw ~= nil then
+    thresholds = {0, 65, 220, 660, 2200, 5000}
+    for i=1,5 do
+      minPoints = 6 - i
+      minPointRangeValue = thresholds[i - 1] or nil
+      maxPointRangeValue = thresholds[i] or nil
+      if sensors.tvocppbRaw <= thresholds[i] then
+        break
+      end
     end
 
     if minPointRangeValue ~= nil and maxPointRangeValue ~= nil then
-      iaq.sensorScores.tvoc = valueToScore(minPoints + ((sensors.tvocmgm3Raw - minPointRangeValue) / (maxPointRangeValue - minPointRangeValue)))
+      iaq.sensorScores.tvoc = valueToScore(minPoints + ((maxPointRangeValue - sensors.tvocmgm3Raw) / (maxPointRangeValue - minPointRangeValue)))
     else
       iaq.sensorScores.tvoc = valueToScore(minPoints)
+    end
+
+    if iaq.sensorScores.tvoc <= 2.5 then
+      table.insert(iaq.recommendations, "The air is really polluted. Open a window now!")
+    elseif iaq.sensorScores.tvoc <= 3.5 then
+      table.insert(iaq.recommendations, "The air isn't really the freshest. You might want to open a window")
     end
 
     table.insert(airQualityScores, iaq.sensorScores.tvoc)
