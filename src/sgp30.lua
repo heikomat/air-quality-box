@@ -27,7 +27,7 @@ function SGP30:new(busId, deviceAddress, iaqCallback, getHumidityCompensationDat
   local lastBaselineSaveWasSuccessful = nil
   local lastBaselineSaveResult = nil
 
-  -- measure air quality once a scond
+  -- measure air quality once a second
   local initFinished = false
   tmr.create():alarm(1000 , tmr.ALARM_AUTO, function(timer)
     local eCO2, TVOCppb, eCO2Valid, TVOCValid = self:measureIAQ()
@@ -51,16 +51,10 @@ function SGP30:new(busId, deviceAddress, iaqCallback, getHumidityCompensationDat
     end
   end)
 
-  -- persist baseline once per hour
+  -- check once a minute if the baseline needs to be saved
   tmr.create():alarm(oneHour * 1000 , tmr.ALARM_AUTO, function(timer)
-    -- If we dont have an initial baseline, and 12 hours have passed (recommended
-    -- time to determine a baseline), then store a new baseline
     local now = math.floor(tmr.now() / 1000000)
-    if initialBaselineExists == false and (now - self.initializedAt) >= twelveHours then
-      initialBaselineExists = true
-    end
-
-    if initialBaselineExists then
+    if now >= nextBaselineSave then
       lastBaselineSave = math.floor(tmr.now() / 1000000)
       nextBaselineSave = lastBaselineSave + oneHour
       lastBaselineSaveWasSuccessful, lastBaselineSaveResult = self:writeAQIBaselineToFile()
