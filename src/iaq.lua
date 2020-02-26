@@ -55,7 +55,7 @@ function calculateIaq(sensors, iaq)
   -- tvoc evaluation (see https://www.repcomsrl.com/wp-content/uploads/2017/06/Environmental_Sensing_VOC_Product_Brochure_EN.pdf )
   if sensors.tvocppbRaw ~= nil then
     thresholds = {0, 65, 220, 660, 2200, 5000}
-    for i=1,5 do
+    for i=1,6 do
       minPoints = 6 - i
       minPointRangeValue = thresholds[i - 1] or nil
       maxPointRangeValue = thresholds[i] or nil
@@ -65,14 +65,14 @@ function calculateIaq(sensors, iaq)
     end
 
     if minPointRangeValue ~= nil and maxPointRangeValue ~= nil then
-      iaq.sensorScores.tvoc = valueToScore(minPoints + ((maxPointRangeValue - sensors.tvocmgm3Raw) / (maxPointRangeValue - minPointRangeValue)))
+      iaq.sensorScores.tvoc = valueToScore(minPoints + ((maxPointRangeValue - sensors.tvocppbRaw) / (maxPointRangeValue - minPointRangeValue)))
     else
       iaq.sensorScores.tvoc = valueToScore(minPoints)
     end
 
-    if iaq.sensorScores.tvoc <= 2.5 then
+    if iaq.sensorScores.tvoc <= 1.5 then
       table.insert(iaq.recommendations, "The air is really polluted. Open a window now!")
-    elseif iaq.sensorScores.tvoc <= 3.5 then
+    elseif iaq.sensorScores.tvoc <= 2.5 then
       table.insert(iaq.recommendations, "The air isn't really the freshest. You might want to open a window")
     end
 
