@@ -7,11 +7,12 @@ function calculateIaq(sensors, iaq)
   local airQualityScores = {}
 
   -- temperature evaluation
+  -- https://www.iotacommunications.com/blog/indoor-air-quality-parameters/
   if sensors.temperatureCelsius ~= nil then
-    if sensors.temperatureCelsius < 18 then
-      iaq.sensorScores.temperature = valueToScore(math.max(5 - (18 - sensors.temperatureCelsius), 0))
-    elseif sensors.temperatureCelsius > 21 then
-      iaq.sensorScores.temperature = valueToScore(math.max(5 - (sensors.temperatureCelsius - 21), 0))
+    if sensors.temperatureCelsius < 20 then
+      iaq.sensorScores.temperature = valueToScore(math.max(5 - (20 - sensors.temperatureCelsius), 0))
+    elseif sensors.temperatureCelsius > 23 then
+      iaq.sensorScores.temperature = valueToScore(math.max(5 - (sensors.temperatureCelsius - 23), 0))
     else
       iaq.sensorScores.temperature = valueToScore(5)
     end
@@ -22,28 +23,29 @@ function calculateIaq(sensors, iaq)
       table.insert(iaq.recommendations, "It's freezing! Turn the heat up!")
     elseif sensors.temperatureCelsius < 16 then
       table.insert(iaq.recommendations, "Kinda chill in here. You might want to turn on the heating")
-    elseif sensors.temperatureCelsius > 25 then
+    elseif sensors.temperatureCelsius > 27 then
       table.insert(iaq.recommendations, "It's really hot! Try to cool the room if you can")
-    elseif sensors.temperatureCelsius > 23 then
+    elseif sensors.temperatureCelsius > 25 then
       table.insert(iaq.recommendations, "Kinda warm in here. Consider cooling the room if possible")
     end
   end
 
   -- humidity evaluation
+  -- https://www.iotacommunications.com/blog/indoor-air-quality-parameters/
   if sensors.humidityPercent ~= nil then
-    if sensors.humidityPercent <= 40 then
-      iaq.sensorScores.humidity = valueToScore(math.max(5 - ((40 - sensors.humidityPercent) / 10), 0))
-    elseif sensors.humidityPercent > 60 then
-      iaq.sensorScores.humidity = valueToScore(math.max(5 - ((sensors.humidityPercent - 60) / 10), 0))
+    if sensors.humidityPercent <= 30 then
+      iaq.sensorScores.humidity = valueToScore(math.max(5 - ((30 - sensors.humidityPercent) / 10), 0))
+    elseif sensors.humidityPercent > 50 then
+      iaq.sensorScores.humidity = valueToScore(math.max(5 - ((sensors.humidityPercent - 50) / 10), 0))
     else
       iaq.sensorScores.humidity = valueToScore(5)
     end
 
     table.insert(airQualityScores, iaq.sensorScores.humidity)
 
-    if sensors.humidityPercent < 10 then
+    if sensors.humidityPercent < 20 then
       table.insert(iaq.recommendations, "The air is super dry! Get a humidifier now!")
-    elseif sensors.humidityPercent < 30 then
+    elseif sensors.humidityPercent < 25 then
       table.insert(iaq.recommendations, "The air is pretty dry. Consider humidifying it.")
     elseif sensors.humidityPercent > 90 then
       table.insert(iaq.recommendations, "The air is super wet! Open a window to let the water out!")
@@ -52,7 +54,8 @@ function calculateIaq(sensors, iaq)
     end
   end
 
-  -- tvoc evaluation (see https://www.repcomsrl.com/wp-content/uploads/2017/06/Environmental_Sensing_VOC_Product_Brochure_EN.pdf )
+  -- tvoc evaluation
+  -- https://www.repcomsrl.com/wp-content/uploads/2017/06/Environmental_Sensing_VOC_Product_Brochure_EN.pdf
   if sensors.tvocppbRaw ~= nil then
     thresholds = {0, 65, 220, 660, 2200, 5000}
     for i=1,6 do
