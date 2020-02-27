@@ -12,7 +12,7 @@ function SGP30:new(busId, deviceAddress, iaqCallback, getHumidityCompensationDat
 
   self:initIAQ()
   self:updateHumidityCompensation(getHumidityCompensationDataCallback)
-  self.initializedAt = math.floor(tmr.now() / 1000000) --seconds are accurate enough
+  self.initializedAt = tmr.time()
 
   local oneHour = 3600
   local twelveHours = oneHour * 12
@@ -40,7 +40,7 @@ function SGP30:new(busId, deviceAddress, iaqCallback, getHumidityCompensationDat
       baselineCO2, baselineTVOC = self:getIAQBaseline()
       TVOCmgm3 = TVOCppb / 218.77 -- see https://forum.digikey.com/t/sensirion-gas-sensors-faq/5205
       
-      local now = math.floor(tmr.now() / 1000000)
+      local now = tmr.time()
       local secondsSinceLastSave = nil
       local secondsTilNextSave = nextBaselineSave - now
       if lastBaselineSave ~= nil then
@@ -53,9 +53,9 @@ function SGP30:new(busId, deviceAddress, iaqCallback, getHumidityCompensationDat
 
   -- check once a minute if the baseline needs to be saved
   tmr.create():alarm(oneHour * 1000 , tmr.ALARM_AUTO, function(timer)
-    local now = math.floor(tmr.now() / 1000000)
+    local now = tmr.time()
     if now >= nextBaselineSave then
-      lastBaselineSave = math.floor(tmr.now() / 1000000)
+      lastBaselineSave = now
       nextBaselineSave = lastBaselineSave + oneHour
       lastBaselineSaveWasSuccessful, lastBaselineSaveResult = self:writeAQIBaselineToFile()
     end
