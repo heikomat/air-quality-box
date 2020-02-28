@@ -3,6 +3,5 @@
     "port": "/dev/ttyUSB0",
     "minify": true,
     "compile": false,
-    "keeppath": false,
-    "connectionDelay": 50
+    "keeppath": false
 }

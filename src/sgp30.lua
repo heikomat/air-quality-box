@@ -146,7 +146,8 @@ function SGP30:setIAQBaseline(eCO2, TVOC)
   local firstTVOCByte, secondTVOCByte = self:getBytesFromTwoByteNumber(TVOC)
   local eCO2CRC = self:calcCRC(eCO2)
   local TVOCCRC = self:calcCRC(TVOC)
-  self:write({0x20, 0x1e, firstECO2Byte, secondECO2Byte, eCO2CRC, firstTVOCByte, secondTVOCByte, TVOCCRC})
+  -- for some reaseon setting the baseline values happens in the opposite order of getting them
+  self:write({0x20, 0x1e, firstTVOCByte, secondTVOCByte, TVOCCRC, firstECO2Byte, secondECO2Byte, eCO2CRC})
 end
 
 function SGP30:readAQIBaselineFromFile()
