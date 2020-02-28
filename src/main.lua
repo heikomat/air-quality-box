@@ -82,19 +82,19 @@ tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)
   if temperature ~= nil then
     state.sensors.temperatureRaw = temperature
     state.sensors.temperatureCelsius = state.sensors.temperatureRaw / 100
-    state.sensors.temperatureText =  state.sensors.temperatureCelsius .. 'C'
+    state.sensors.temperatureText =  roundFixed(state.sensors.temperatureCelsius, 1) .. 'C'
   end
 
   if pressure ~= nil then
     state.sensors.pressureRaw = pressure
-    state.sensors.pressureHPa = round(state.sensors.pressureRaw / 1000, 0)
-    state.sensors.pressureText = state.sensors.pressureHPa .. 'hpa'
+    state.sensors.pressureHPa = state.sensors.pressureRaw / 1000
+    state.sensors.pressureText = round(state.sensors.pressureHPa) .. 'hpa'
   end
 
   if humidity ~= nil then
     state.sensors.humidityRaw = humidity
-    state.sensors.humidityPercent = round(state.sensors.humidityRaw / 1000, 1)
-    state.sensors.humidityText = state.sensors.humidityPercent .. '%'
+    state.sensors.humidityPercent = state.sensors.humidityRaw / 1000
+    state.sensors.humidityText = roundFixed(state.sensors.humidityRaw / 1000, 1) .. '%'
   end
 end)
 

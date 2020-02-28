@@ -1,3 +1,5 @@
+require 'tools'
+
 sla = 0x3c
 display = u8g2.ssd1306_i2c_128x64_noname(0, sla)
 display:setFont(u8g2.font_6x10_tf)
@@ -20,35 +22,60 @@ for key, value in pairs(icons) do
   file.close()
 end
 
+--function updateDisplayArea(x, y, width, height)
+--  local updateX = math.floor(x/8)
+--  local updateY = math.floor(y/8)
+--  local updateWidth = math.ceil((width + x - (updateX*8))/8)
+--  local updateHeight = math.ceil((height + y - (updateY*8))/8)
+--  table.insert(areasToUpdate, {updateX, updateY, updateWidth, updateHeight})
+--end
+
+function drawGauge(centerX, centerY, radius, angle)
+  display:drawCircle(centerX, centerY, radius, bit.bor(u8g2.DRAW_UPPER_RIGHT, u8g2.DRAW_LOWER_RIGHT))
+  display:drawLine(centerX, centerY, centerX + radius*sin(angle*math.pi/180), centerY - radius*cos(angle*math.pi/180))
+end
+
 function updateDisplay(state)
 
   display:clearBuffer()
+  drawStaticUI()
+  drawWifiStatus(state)
+
   if state.sensors.temperatureText ~= nil then
-    display:drawStr(16, 13, state.sensors.temperatureText)
-    display:updateDisplayArea(2, 0, 6, 2)
-  end
-  if state.sensors.humidityText ~= nil then
-    display:drawStr(80, 13, state.sensors.humidityText)
-    display:updateDisplayArea(10, 0, 4, 2)
-  end
-  if state.sensors.pressureText ~= nil then
-    display:drawStr(16, 29, state.sensors.pressureText)
-    display:updateDisplayArea(2, 2, 6, 2)
-  end
-  if state.sensors.tvocppbText ~= nil then
-    display:drawStr(80, 29, state.sensors.tvocppbText)
-    display:updateDisplayArea(10, 2, 6, 2)
+    if state.iaq.sensorScores.temperature ~= nil then
+      drawGauge(18, 8, 8, 180 - (state.iaq.sensorScores.temperature*36))
+    end
+    display:drawStr(0, 26, state.sensors.temperatureText)
   end
 
-  drawWifiStatus(state)
+  if state.sensors.humidityText ~= nil then
+    if state.iaq.sensorScores.humidity ~= nil then
+      drawGauge(18, 44, 8, 180 - (state.iaq.sensorScores.humidity*36))
+    end
+    display:drawStr(0, 62, state.sensors.humidityText)
+  end
+
+  if state.sensors.tvocppbText ~= nil then
+    if state.iaq.sensorScores.tvoc ~= nil then
+      drawGauge(60, 8, 8, 180 - (state.iaq.sensorScores.tvoc*36))
+    end
+    display:drawStr(42, 26, state.sensors.tvocppbText)
+  end
+
+  if state.iaq.summary.minScore ~= nil and state.iaq.summary.averageScore ~= nil then
+    drawGauge(60, 44, 8, 180 - (state.iaq.summary.minScore*36))
+    drawGauge(60, 44, 8, 180 - (state.iaq.summary.averageScore*36))
+    display:drawStr(42, 62, roundFixed(state.iaq.summary.averageScore, 1)..'/'..roundFixed(state.iaq.summary.minScore, 1))
+  end
+
+  display:updateDisplayArea(0, 0, 16, 8)
 end
 
 function drawStaticUI()
   display:drawXBM(0, 0, 16, 16, icons.temperature)
-  display:drawXBM(64, 0, 16, 16, icons.humidity)
-  display:drawXBM(0, 16, 16, 16, icons.pressure)
-  display:drawXBM(64, 16, 16, 16, icons.voc)
-  display:updateDisplayArea(0, 0, 16, 8)
+  display:drawXBM(0, 36, 16, 16, icons.humidity)
+
+  display:drawXBM(42, 0, 16, 16, icons.voc)
 end
 
 wifiConnectingBlink = false
@@ -73,8 +100,4 @@ function drawWifiStatus(newState)
       display:drawXBM(112, 0, 16, 16, icons.wifi1)
     end
   end
-
-  display:updateDisplayArea(14, 0, 2, 2)
 end
-
-drawStaticUI()
