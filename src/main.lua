@@ -72,8 +72,13 @@ state.wifi.connecting = initWifi(function()
   state.wifi.connecting = false
 
   state.mqtt.connecting = connectMqtt(function()
+    -- connection acquired
     state.mqtt.connected = true
     state.mqtt.connecting = false
+  end, function()
+    -- connection lost
+    state.mqtt.connected = false
+    state.mqtt.connecting = true
   end)
 end)
 
