@@ -34,7 +34,7 @@ function calculateIaq(sensors, iaq)
   -- https://www.iotacommunications.com/blog/indoor-air-quality-parameters/
   if sensors.humidityPercent ~= nil then
     if sensors.humidityPercent <= 30 then
-      iaq.sensorScores.humidity = valueToScore(math.max(5 - ((30 - sensors.humidityPercent) / 10), 0))
+      iaq.sensorScores.humidity = valueToScore(math.max(5 - ((30 - sensors.humidityPercent) / 5), 0))
     elseif sensors.humidityPercent > 50 then
       iaq.sensorScores.humidity = valueToScore(math.max(5 - ((sensors.humidityPercent - 50) / 10), 0))
     else
