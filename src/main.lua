@@ -1,7 +1,7 @@
-node.setcpufreq(node.CPU160MHZ)
+--node.setcpufreq(node.CPU160MHZ)
 
-local pinSDA = 6
-local pinSCL = 5
+local pinSDA = 7
+local pinSCL = 6
 i2c.setup(0, pinSDA, pinSCL, i2c.SLOW)
 bme280.setup()
 
