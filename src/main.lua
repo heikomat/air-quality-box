@@ -30,6 +30,9 @@ state = {
     tvocppbText = nil,
     tvocmgm3Raw = nil,
     tvocmgm3Text = nil,
+    co2Raw = nil,
+    co2ppm = nil,
+    co2Text = nil,
   },
   debug = {
     sgp30Baseline = {
@@ -65,6 +68,7 @@ connectMqtt = require 'connectMqtt'
 updateIaq = require 'iaq'
 require 'tools'
 require 'sgp30'
+require 'mh-z19'
 require 'display'
 
 state.wifi.connecting = initWifi(function()
@@ -124,6 +128,12 @@ end, function()
   local temperature = state.sensors.temperatureRaw / 100
   local humidity = state.sensors.humidityRaw / 1000
   return temperature, humidity
+end)
+
+mhz19 = MHZ19:new(2, function(co2)
+  state.sensors.co2Raw = co2
+  state.sensors.co2ppm = co2
+  state.sensors.co2Text = co2 .. 'ppm'
 end)
 
 tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)

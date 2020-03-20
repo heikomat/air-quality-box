@@ -82,6 +82,35 @@ function calculateIaq(sensors, iaq)
     table.insert(airQualityScores, iaq.sensorScores.tvoc)
   end
 
+  -- co2 evaluation
+  -- https://dixellasia.com/download/dixellasia_com/VCP/Datasheet/Air_Quality/duct-air-quality-voc-co2-sensor-bio-2000-duct.pdf
+  -- http://www.iaquk.org.uk/ESW/Files/IAQ_Rating_Index.pdf
+  if sensors.co2Raw ~= nil then
+    thresholds = {400, 600, 1000, 1400, 1800, 2000}
+    for i=1,6 do
+      minPoints = 6 - i
+      minPointRangeValue = thresholds[i - 1] or nil
+      maxPointRangeValue = thresholds[i] or nil
+      if sensors.co2Raw <= thresholds[i] then
+        break
+      end
+    end
+
+    if minPointRangeValue ~= nil and maxPointRangeValue ~= nil then
+      iaq.sensorScores.co2 = valueToScore(minPoints + ((maxPointRangeValue - sensors.co2Raw) / (maxPointRangeValue - minPointRangeValue)))
+    else
+      iaq.sensorScores.co2 = valueToScore(minPoints)
+    end
+
+    if iaq.sensorScores.co2 <= 1.5 then
+      table.insert(iaq.recommendations, "The air is really stuffy. Open a window now!")
+    elseif iaq.sensorScores.co2 <= 2.5 then
+      table.insert(iaq.recommendations, "The air is a little stuffy. You might want to open a window")
+    end
+
+    table.insert(airQualityScores, iaq.sensorScores.co2)
+  end
+
   -- summarization
   iaq.summary.minScore = nil
   iaq.summary.maxScore = nil

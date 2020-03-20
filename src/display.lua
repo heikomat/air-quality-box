@@ -22,14 +22,6 @@ for key, value in pairs(icons) do
   file.close()
 end
 
---function updateDisplayArea(x, y, width, height)
---  local updateX = math.floor(x/8)
---  local updateY = math.floor(y/8)
---  local updateWidth = math.ceil((width + x - (updateX*8))/8)
---  local updateHeight = math.ceil((height + y - (updateY*8))/8)
---  table.insert(areasToUpdate, {updateX, updateY, updateWidth, updateHeight})
---end
-
 function drawGauge(centerX, centerY, radius, angle)
   display:drawCircle(centerX, centerY, radius, bit.bor(u8g2.DRAW_UPPER_RIGHT, u8g2.DRAW_LOWER_RIGHT))
   display:drawLine(centerX, centerY, centerX + radius*sin(angle*math.pi/180), centerY - radius*cos(angle*math.pi/180))
@@ -62,10 +54,17 @@ function updateDisplay(state)
     display:drawStr(42, 26, state.sensors.tvocppbText)
   end
 
+  if state.sensors.co2Text ~= nil then
+    if state.iaq.sensorScores.co2 ~= nil then
+      drawGauge(60, 44, 8, 180 - (state.iaq.sensorScores.co2*36))
+    end
+    display:drawStr(42, 62, state.sensors.co2Text)
+  end
+
   if state.iaq.summary.minScore ~= nil and state.iaq.summary.averageScore ~= nil then
-    drawGauge(60, 44, 8, 180 - (state.iaq.summary.minScore*36))
-    drawGauge(60, 44, 8, 180 - (state.iaq.summary.averageScore*36))
-    display:drawStr(42, 62, roundFixed(state.iaq.summary.averageScore, 1)..'/'..roundFixed(state.iaq.summary.minScore, 1))
+    drawGauge(102, 44, 8, 180 - (state.iaq.summary.minScore*36))
+    drawGauge(102, 44, 8, 180 - (state.iaq.summary.averageScore*36))
+    display:drawStr(84, 62, roundFixed(state.iaq.summary.averageScore, 1)..'/'..roundFixed(state.iaq.summary.minScore, 1))
   end
 
   display:updateDisplayArea(0, 0, 16, 8)
