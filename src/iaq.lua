@@ -127,16 +127,20 @@ function calculateIaq(sensors, iaq)
   
   iaq.summary.averageScore = round(sumScore / table.getn(airQualityScores), 2)
 
-  if iaq.summary.minScore > 4 then
-    iaq.summary.text = "The air here is excellent! :D"
-  elseif iaq.summary.minScore > 3 then
-    iaq.summary.text = "The air here is quite good :)"
-  elseif iaq.summary.minScore > 2 then
-    iaq.summary.text = "The air here is ok i guess"
-  elseif iaq.summary.minScore > 1 then
-    iaq.summary.text = "The air here is pretty poor"
+  if iaq.summary.minScore ~= nil then
+    if iaq.summary.minScore > 4 then
+      iaq.summary.text = 'The air here is excellent! :D'
+    elseif iaq.summary.minScore > 3 then
+      iaq.summary.text = 'The air here is quite good :)'
+    elseif iaq.summary.minScore > 2 then
+      iaq.summary.text = 'The air here is ok i guess'
+    elseif iaq.summary.minScore > 1 then
+      iaq.summary.text = 'The air here is pretty poor'
+    else
+      iaq.summary.text = 'The air here is really bad! Do something! >:('
+    end
   else
-    iaq.summary.text = "The air here is really bad! Do something! >:("
+    iaq.summary.text = ''
   end
 end
 

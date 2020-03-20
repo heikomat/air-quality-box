@@ -1,30 +1,36 @@
 MHZ19 = {}
 
+-- The MH-Z19B self-calibrates every 24 hours by setting the lowest seen value in these 24 Hours as 400ppm baseline.
+-- Disabling this and manually triggering the calibration requires a uart connection
 function MHZ19:new(gpioPin, co2Callback)
   setmetatable({}, self)
   self.__index = self
 
-  local lastLevel
-  local lastTimestamp
-  gpio.trig(gpioPin, 'both', function(level, timestamp)
-    if lastLevel == level then
-      lastTimestamp = timestamp
+  local measueStartTimestamp
+
+  gpio.mode(gpioPin, gpio.INT)
+  gpio.trig(gpioPin, 'both', function(level, timestamp, eventcount)
+    local isMeasurementEnd = level == 0
+
+    local eventWasMissed = eventcount > 1
+    local timerWrapped = measueStartTimestamp ~= nil and measueStartTimestamp > timestamp
+    local missingMeasurementStart = isMeasurementEnd and measueStartTimestamp == nil
+
+    local abortMeasurement = eventWasMissed or timerWrapped or missingMeasurementStart
+    if abortMeasurement then
+      measueStartTimestamp = nil
       return
     end
 
-    if lastTimestamp == nil then
-      lastTimestamp = timestamp
+    local isMeasurementStart = level == 1
+    if isMeasurementStart then
+      measueStartTimestamp = timestamp
       return
     end
 
-    if level == 0 and timestamp > lastTimestamp then
-      local timeHighMilliseconds = (timestamp - lastTimestamp) / 1000;
-      co2 = self:calculateCo2(timeHighMilliseconds)
-      co2Callback(co2)
-    end
-
-    lastLevel = level
-    lastTimestamp = timestamp
+    local timeHighMilliseconds = (timestamp - measueStartTimestamp) / 1000;
+    co2 = self:calculateCo2(timeHighMilliseconds)
+    co2Callback(co2)
   end)
 end
 

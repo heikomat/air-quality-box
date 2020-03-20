@@ -1,4 +1,4 @@
---node.setcpufreq(node.CPU160MHZ)
+node.setcpufreq(node.CPU160MHZ)
 
 local pinSDA = 7
 local pinSCL = 6
@@ -63,9 +63,9 @@ state = {
   }
 }
 
-initWifi = require 'initWifi'
-connectMqtt = require 'connectMqtt'
-updateIaq = require 'iaq'
+local initWifi = require 'initWifi'
+local connectMqtt = require 'connectMqtt'
+local updateIaq = require 'iaq'
 require 'tools'
 require 'sgp30'
 require 'mh-z19'
@@ -136,8 +136,9 @@ mhz19 = MHZ19:new(2, function(co2)
   state.sensors.co2Text = co2 .. 'ppm'
 end)
 
-tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)
-  updateDisplay(state)
+-- don't refresh too often, as it is slow (~230ms) and might result in gpio-interrupt-callbacks not being fired
+tmr.create():alarm(1000 , tmr.ALARM_AUTO, function(timer)
+    updateDisplay(state)
 end)
 
 tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)

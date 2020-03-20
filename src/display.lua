@@ -67,6 +67,7 @@ function updateDisplay(state)
     display:drawStr(84, 62, roundFixed(state.iaq.summary.averageScore, 1)..'/'..roundFixed(state.iaq.summary.minScore, 1))
   end
 
+  -- the following call is very slow (~228ms). CPU-Speed does affect it, i2c-bus speed does not
   display:updateDisplayArea(0, 0, 16, 8)
 end
 
