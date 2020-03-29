@@ -33,38 +33,46 @@ function updateDisplay(state)
   drawStaticUI()
   drawWifiStatus(state)
 
-  if state.sensors.temperatureText ~= nil then
+  if state.sensors.temperature.text ~= nil then
     if state.iaq.sensorScores.temperature ~= nil then
       drawGauge(18, 8, 8, 180 - (state.iaq.sensorScores.temperature*36))
     end
-    display:drawStr(0, 26, state.sensors.temperatureText)
+    display:drawStr(0, 26, state.sensors.temperature.text)
   end
 
-  if state.sensors.humidityText ~= nil then
+  if state.sensors.humidity.text ~= nil then
     if state.iaq.sensorScores.humidity ~= nil then
       drawGauge(18, 44, 8, 180 - (state.iaq.sensorScores.humidity*36))
     end
-    display:drawStr(0, 62, state.sensors.humidityText)
+    display:drawStr(0, 62, state.sensors.humidity.text)
   end
 
-  if state.sensors.tvocppbText ~= nil then
+  if state.sensors.tvoc.ppbText ~= nil then
     if state.iaq.sensorScores.tvoc ~= nil then
       drawGauge(60, 8, 8, 180 - (state.iaq.sensorScores.tvoc*36))
     end
-    display:drawStr(42, 26, state.sensors.tvocppbText)
+    display:drawStr(42, 26, state.sensors.tvoc.ppbText)
   end
 
-  if state.sensors.co2Text ~= nil then
+  if state.sensors.co2.text ~= nil then
     if state.iaq.sensorScores.co2 ~= nil then
       drawGauge(60, 44, 8, 180 - (state.iaq.sensorScores.co2*36))
     end
-    display:drawStr(42, 62, state.sensors.co2Text)
+    display:drawStr(42, 62, state.sensors.co2.text)
   end
 
   if state.iaq.summary.minScore ~= nil and state.iaq.summary.averageScore ~= nil then
-    drawGauge(102, 44, 8, 180 - (state.iaq.summary.minScore*36))
-    drawGauge(102, 44, 8, 180 - (state.iaq.summary.averageScore*36))
     display:drawStr(84, 62, roundFixed(state.iaq.summary.averageScore, 1)..'/'..roundFixed(state.iaq.summary.minScore, 1))
+  end
+
+  if state.sensors.pm10.text ~= nil then
+    display:drawStr(84, 8, state.sensors.pm10.raw)
+  end
+  if state.sensors.pm25.text ~= nil then
+    display:drawStr(84, 17, state.sensors.pm25.raw)
+  end
+  if state.sensors.pm100.text ~= nil then
+    display:drawStr(84, 26, state.sensors.pm100.raw)
   end
 
   -- the following call is very slow (~228ms). CPU-Speed does affect it, i2c-bus speed does not

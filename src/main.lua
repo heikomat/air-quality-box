@@ -1,7 +1,7 @@
 node.setcpufreq(node.CPU160MHZ)
 
 local pinSDA = 7
-local pinSCL = 6
+local pinSCL = 5
 i2c.setup(0, pinSDA, pinSCL, i2c.SLOW)
 bme280.setup()
 
@@ -17,22 +17,47 @@ state = {
     connected = false,
   },
   sensors = {
-    temperatureRaw = nil,
-    temperatureCelsius = nil,
-    temperatureText = nil,
-    pressureRaw = nil,
-    pressureHPa = nil,
-    pressureText = nil,
-    humidityRaw = nil,
-    humidityPercent = nil,
-    humidityText = nil,
-    tvocppbRaw = nil,
-    tvocppbText = nil,
-    tvocmgm3Raw = nil,
-    tvocmgm3Text = nil,
-    co2Raw = nil,
-    co2ppm = nil,
-    co2Text = nil,
+    temperature = {
+      raw = nil,
+      celsius = nil,
+      text = nil,
+    },
+    pressure = {
+      raw = nil,
+      hPa = nil,
+      text = nil,
+    },
+    humidity = {
+      raw = nil,
+      percent = nil,
+      text = nil,
+    },
+    tvoc = {
+      ppbRaw = nil,
+      ppbText = nil,
+      mgm3Raw = nil,
+      mgm3Text = nil,
+    },
+    co2 = {
+      raw = nil,
+      ppm = nil,
+      text = nil,
+    },
+    pm10 = {
+      raw = nil,
+      mgm3 = nil,
+      text = nil,
+    },
+    pm25 = {
+      raw = nil,
+      mgm3 = nil,
+      text = nil,
+    },
+    pm100 = {
+      raw = nil,
+      mgm3 = nil,
+      text = nil,
+    },
   },
   debug = {
     sgp30Baseline = {
@@ -57,8 +82,9 @@ state = {
       humidity = nil,
       tvoc = nil,
       co2 = nil,
-      pm2_5 = nil,
       pm10 = nil,
+      pm25 = nil,
+      pm100 = nil,
     }
   }
 }
@@ -69,6 +95,7 @@ local updateIaq = require 'iaq'
 require 'tools'
 require 'sgp30'
 require 'mh-z19'
+require 'pms5003'
 require 'display'
 
 state.wifi.connecting = initWifi(function()
@@ -89,30 +116,30 @@ end)
 tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)
   temperature, pressure, humidity = bme280.read()
   if temperature ~= nil then
-    state.sensors.temperatureRaw = temperature
-    state.sensors.temperatureCelsius = state.sensors.temperatureRaw / 100
-    state.sensors.temperatureText =  roundFixed(state.sensors.temperatureCelsius, 1) .. 'C'
+    state.sensors.temperature.raw = temperature
+    state.sensors.temperature.celsius = state.sensors.temperature.raw / 100
+    state.sensors.temperature.text =  roundFixed(state.sensors.temperature.celsius, 1) .. 'C'
   end
 
   if pressure ~= nil then
-    state.sensors.pressureRaw = pressure
-    state.sensors.pressureHPa = state.sensors.pressureRaw / 1000
-    state.sensors.pressureText = round(state.sensors.pressureHPa) .. 'hpa'
+    state.sensors.pressure.raw = pressure
+    state.sensors.pressure.hPa = state.sensors.pressure.raw / 1000
+    state.sensors.pressure.text = round(state.sensors.pressure.hPa) .. 'hpa'
   end
 
   if humidity ~= nil then
-    state.sensors.humidityRaw = humidity
-    state.sensors.humidityPercent = state.sensors.humidityRaw / 1000
-    state.sensors.humidityText = roundFixed(state.sensors.humidityRaw / 1000, 1) .. '%'
+    state.sensors.humidity.raw = humidity
+    state.sensors.humidity.percent = state.sensors.humidity.raw / 1000
+    state.sensors.humidity.text = roundFixed(state.sensors.humidity.raw / 1000, 1) .. '%'
   end
 end)
 
 sgp30 = SGP30:new(nil, nil, function(eCO2, TVOCppb, TVOCmgm3, eCO2Baseline, TVOCBaseline, secondsSincaLastBaselineSave, secondsTilNextBaselineSave, lastBaselineSaveWasSuccessful, lastBaselineSaveResult)
-  state.sensors.tvocppbRaw = TVOCppb
-  state.sensors.tvocppbText = TVOCppb .. 'ppb'
+  state.sensors.tvoc.ppbRaw = TVOCppb
+  state.sensors.tvoc.ppbText = TVOCppb .. 'ppb'
 
-  state.sensors.tvocmgm3Raw = TVOCmgm3
-  state.sensors.tvocmgm3Text = TVOCmgm3 .. 'mg/m3'
+  state.sensors.tvoc.mgm3Raw = TVOCmgm3
+  state.sensors.tvoc.mgm3Text = TVOCmgm3 .. 'mg/m3'
 
   state.debug.sgp30Baseline.eCO2 = eCO2Baseline
   state.debug.sgp30Baseline.TVOC = TVOCBaseline
@@ -131,9 +158,23 @@ end, function()
 end)
 
 mhz19 = MHZ19:new(2, function(co2)
-  state.sensors.co2Raw = co2
-  state.sensors.co2ppm = co2
-  state.sensors.co2Text = co2 .. 'ppm'
+  state.sensors.co2.raw = co2
+  state.sensors.co2.ppm = co2
+  state.sensors.co2.text = co2 .. 'ppm'
+end)
+
+pms5003 = PMS5003:new(function(pm10, pm25, pm100)
+  state.sensors.pm10.raw = pm10;
+  state.sensors.pm10.mgm3 = pm10;
+  state.sensors.pm10.text = pm10 .. 'μg/m3';
+
+  state.sensors.pm25.raw = pm25;
+  state.sensors.pm25.mgm3 = pm25;
+  state.sensors.pm25.text = pm25 .. 'μg/m3';
+
+  state.sensors.pm100.raw = pm100;
+  state.sensors.pm100.mgm3 = pm100;
+  state.sensors.pm100.text = pm100 .. 'μg/m3';
 end)
 
 -- don't refresh too often, as it is slow (~230ms) and might result in gpio-interrupt-callbacks not being fired

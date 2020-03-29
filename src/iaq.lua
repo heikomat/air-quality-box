@@ -8,67 +8,67 @@ function calculateIaq(sensors, iaq)
 
   -- temperature evaluation
   -- https://www.iotacommunications.com/blog/indoor-air-quality-parameters/
-  if sensors.temperatureCelsius ~= nil then
-    if sensors.temperatureCelsius < 20 then
-      iaq.sensorScores.temperature = valueToScore(math.max(5 - (20 - sensors.temperatureCelsius), 0))
-    elseif sensors.temperatureCelsius > 23 then
-      iaq.sensorScores.temperature = valueToScore(math.max(5 - (sensors.temperatureCelsius - 23), 0))
+  if sensors.temperature.celsius ~= nil then
+    if sensors.temperature.celsius < 20 then
+      iaq.sensorScores.temperature = valueToScore(math.max(5 - (20 - sensors.temperature.celsius), 0))
+    elseif sensors.temperature.celsius > 23 then
+      iaq.sensorScores.temperature = valueToScore(math.max(5 - (sensors.temperature.celsius - 23), 0))
     else
       iaq.sensorScores.temperature = valueToScore(5)
     end
   
     table.insert(airQualityScores, iaq.sensorScores.temperature)
 
-    if sensors.temperatureCelsius < 14 then
+    if sensors.temperature.celsius < 14 then
       table.insert(iaq.recommendations, "It's freezing! Turn the heat up!")
-    elseif sensors.temperatureCelsius < 16 then
+    elseif sensors.temperature.celsius < 16 then
       table.insert(iaq.recommendations, "Kinda chill in here. You might want to turn on the heating")
-    elseif sensors.temperatureCelsius > 27 then
+    elseif sensors.temperature.celsius > 27 then
       table.insert(iaq.recommendations, "It's really hot! Try to cool the room if you can")
-    elseif sensors.temperatureCelsius > 25 then
+    elseif sensors.temperature.celsius > 25 then
       table.insert(iaq.recommendations, "Kinda warm in here. Consider cooling the room if possible")
     end
   end
 
   -- humidity evaluation
   -- https://www.iotacommunications.com/blog/indoor-air-quality-parameters/
-  if sensors.humidityPercent ~= nil then
-    if sensors.humidityPercent <= 30 then
-      iaq.sensorScores.humidity = valueToScore(math.max(5 - ((30 - sensors.humidityPercent) / 5), 0))
-    elseif sensors.humidityPercent > 50 then
-      iaq.sensorScores.humidity = valueToScore(math.max(5 - ((sensors.humidityPercent - 50) / 10), 0))
+  if sensors.humidity.percent ~= nil then
+    if sensors.humidity.percent <= 30 then
+      iaq.sensorScores.humidity = valueToScore(math.max(5 - ((30 - sensors.humidity.percent) / 5), 0))
+    elseif sensors.humidity.percent > 50 then
+      iaq.sensorScores.humidity = valueToScore(math.max(5 - ((sensors.humidity.percent - 50) / 10), 0))
     else
       iaq.sensorScores.humidity = valueToScore(5)
     end
 
     table.insert(airQualityScores, iaq.sensorScores.humidity)
 
-    if sensors.humidityPercent < 20 then
+    if sensors.humidity.percent < 20 then
       table.insert(iaq.recommendations, "The air is super dry! Get a humidifier now!")
-    elseif sensors.humidityPercent < 25 then
+    elseif sensors.humidity.percent < 25 then
       table.insert(iaq.recommendations, "The air is pretty dry. Consider humidifying it.")
-    elseif sensors.humidityPercent > 90 then
+    elseif sensors.humidity.percent > 90 then
       table.insert(iaq.recommendations, "The air is super wet! Open a window to let the water out!")
-    elseif sensors.humidityPercent > 70 then
+    elseif sensors.humidity.percent > 70 then
       table.insert(iaq.recommendations, "It's pretty humid. You should open a window for some airflow.")
     end
   end
 
   -- tvoc evaluation
   -- https://www.repcomsrl.com/wp-content/uploads/2017/06/Environmental_Sensing_VOC_Product_Brochure_EN.pdf
-  if sensors.tvocppbRaw ~= nil then
+  if sensors.tvoc.ppbRaw ~= nil then
     thresholds = {0, 65, 220, 660, 2200, 5000}
     for i=1,6 do
       minPoints = 6 - i
       minPointRangeValue = thresholds[i - 1] or nil
       maxPointRangeValue = thresholds[i] or nil
-      if sensors.tvocppbRaw <= thresholds[i] then
+      if sensors.tvoc.ppbRaw <= thresholds[i] then
         break
       end
     end
 
     if minPointRangeValue ~= nil and maxPointRangeValue ~= nil then
-      iaq.sensorScores.tvoc = valueToScore(minPoints + ((maxPointRangeValue - sensors.tvocppbRaw) / (maxPointRangeValue - minPointRangeValue)))
+      iaq.sensorScores.tvoc = valueToScore(minPoints + ((maxPointRangeValue - sensors.tvoc.ppbRaw) / (maxPointRangeValue - minPointRangeValue)))
     else
       iaq.sensorScores.tvoc = valueToScore(minPoints)
     end
@@ -85,19 +85,19 @@ function calculateIaq(sensors, iaq)
   -- co2 evaluation
   -- https://dixellasia.com/download/dixellasia_com/VCP/Datasheet/Air_Quality/duct-air-quality-voc-co2-sensor-bio-2000-duct.pdf
   -- http://www.iaquk.org.uk/ESW/Files/IAQ_Rating_Index.pdf
-  if sensors.co2Raw ~= nil then
+  if sensors.co2.raw ~= nil then
     thresholds = {400, 600, 1000, 1400, 1800, 2000}
     for i=1,6 do
       minPoints = 6 - i
       minPointRangeValue = thresholds[i - 1] or nil
       maxPointRangeValue = thresholds[i] or nil
-      if sensors.co2Raw <= thresholds[i] then
+      if sensors.co2.raw <= thresholds[i] then
         break
       end
     end
 
     if minPointRangeValue ~= nil and maxPointRangeValue ~= nil then
-      iaq.sensorScores.co2 = valueToScore(minPoints + ((maxPointRangeValue - sensors.co2Raw) / (maxPointRangeValue - minPointRangeValue)))
+      iaq.sensorScores.co2 = valueToScore(minPoints + ((maxPointRangeValue - sensors.co2.raw) / (maxPointRangeValue - minPointRangeValue)))
     else
       iaq.sensorScores.co2 = valueToScore(minPoints)
     end
