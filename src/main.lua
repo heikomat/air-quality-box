@@ -106,12 +106,26 @@ state.wifi.connecting = initWifi(function()
     -- connection acquired
     state.mqtt.connected = true
     state.mqtt.connecting = false
+    local clientId = getMqttClientId()
+    subscribeMqtt('air_quality/' .. clientId .. '/update_lfs')
+
+    -- also send print outputs to mqtt
+    old_print = print
+    print = function(...)
+      old_print(...)
+      local jsonData = sjson.encoder({...}):read(2048)
+      publishMqtt('air_quality/' .. clientId .. '/console', jsonData, false)
+    end
   end, function()
     -- connection lost
     state.mqtt.connected = false
     state.mqtt.connecting = true
   end, function(topic, message)
     print(topic, message)
+    if topic == 'air_quality/' .. getMqttClientId() .. '/update_lfs' then
+      local updateOptions = sjson.decoder():write(message)
+      LFS.HTTP_OTA(updateOptions.host, updateOptions.port, updateOptions.dir, updateOptions.imageName)
+    end
   end)
 end)
 
@@ -191,7 +205,7 @@ end)
 tmr.create():alarm(10000 , tmr.ALARM_AUTO, function(timer)
   if state.mqtt.connected then
     local jsonData = sjson.encoder(state):read(2048)
-    publishMqtt("air_quality", jsonData, true)
+    publishMqtt('air_quality', jsonData, true)
   end
 end)
 

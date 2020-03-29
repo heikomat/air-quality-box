@@ -15,7 +15,9 @@ function MHZ19:new(gpioPin, co2Callback)
     local eventWasMissed = eventcount > 1
     local timerWrapped = measueStartTimestamp ~= nil and measueStartTimestamp > timestamp
     local missingMeasurementStart = isMeasurementEnd and measueStartTimestamp == nil
-
+    if eventWasMissed then
+      print('MHZ19 gpio event missed', eventcount)
+    end
     local abortMeasurement = eventWasMissed or timerWrapped or missingMeasurementStart
     if abortMeasurement then
       measueStartTimestamp = nil

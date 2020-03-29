@@ -56,9 +56,12 @@ function publishMqtt(channel, message, suffixChannelWithClientId)
   return mqttClient:publish(channel, message, 0, 0)
 end
 
-
-return connectMqtt
-
 function subscribeMqtt(topic, onMessageCallback)
   mqttClient:subscribe(topic, 0)
 end
+
+function getMqttClientId()
+  return clientId
+end
+
+return connectMqtt
