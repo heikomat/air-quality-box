@@ -110,6 +110,8 @@ state.wifi.connecting = initWifi(function()
     -- connection lost
     state.mqtt.connected = false
     state.mqtt.connecting = true
+  end, function(topic, message)
+    print(topic, message)
   end)
 end)
 

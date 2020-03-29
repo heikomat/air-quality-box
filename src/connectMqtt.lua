@@ -1,7 +1,7 @@
 local mqttClient
 local clientId
 
-function connectMqtt(connectionAcquiredCallback, connectionLostCallback)
+function connectMqtt(connectionAcquiredCallback, connectionLostCallback, onMessageCallback)
   local server, username, password
   if file.open('mqtt_credentials.txt') ~= nil then
     server = string.sub(file.readline(), 1, -2) -- to remove newline character
@@ -21,6 +21,12 @@ function connectMqtt(connectionAcquiredCallback, connectionLostCallback)
     end
     _connect(mqttClient, server, connectionAcquiredCallback)
   end)
+
+  if onMessageCallback ~= nil then
+    mqttClient:on('message', function(mqttClient, topic, message)
+      onMessageCallback(topic, message)
+    end)
+  end
 
   _connect(mqttClient, server, connectionAcquiredCallback)
   return true
@@ -52,3 +58,7 @@ end
 
 
 return connectMqtt
+
+function subscribeMqtt(topic, onMessageCallback)
+  mqttClient:subscribe(topic, 0)
+end
