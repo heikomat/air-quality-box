@@ -64,4 +64,15 @@ function getMqttClientId()
   return clientId
 end
 
+function unregisterMqtt()
+  connectMqtt = nil
+  _connect = nil
+  publishMqtt = nil
+  subscribeMqtt = nil
+  getMqttClientId = nil
+  unregisterMqtt = nil
+  mqttClient:close()
+  mqttClient = nil
+end
+
 return connectMqtt

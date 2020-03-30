@@ -25,4 +25,10 @@ function initWifi(callback)
   return true
 end
 
+function unregisterWifi()
+  initWifi = nil
+  unregisterWifi = nil
+  wifiIsConnected = nil
+end
+
 return initWifi

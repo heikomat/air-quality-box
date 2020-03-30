@@ -24,7 +24,6 @@ doRequest = function(socket, hostIP) -- luacheck: no unused
         "Host: "..host,
         "Connection: close",
         "", "", }, "\r\n")
-        print(request)
         sck:send(request)
         sck:on("receive",firstRec)
       end)
@@ -36,7 +35,6 @@ firstRec = function (sck,rec)
   local i      = rec:find('\r\n\r\n',1,true) or 1
   local header = rec:sub(1,i+1):lower()
   size         = tonumber(header:match('\ncontent%-length: *(%d+)\r') or 0)
-  print(rec:sub(1, i+1))
   if size > 0 then
     sck:on("receive",subsRec)
     file.open(image, 'w')
@@ -66,9 +64,12 @@ finalise = function(sck)
   local s = file.stat(image)
   if (s and size == s.size) then
     wifi.setmode(wifi.NULLMODE, false)
+    print('A')
     collectgarbage();collectgarbage()
+    print('B')
       -- run as separate task to maximise RAM available
-    node.task.post(function() node.flashreload(image) end)
+      --node.flashreload(image)
+      node.task.post(function() node.flashreload(image) end)
   else
     print"Invalid save of image file"
   end

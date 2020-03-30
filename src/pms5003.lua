@@ -4,8 +4,9 @@ function PMS5003:new(pmsCallback)
   setmetatable({}, self)
   self.__index = self
 
-  uart.setup(0, 9600, 8, uart.PARITY_NONE, uart.STOPBITS_1)
-  self:readPMFromUart(pmsCallback)
+  --uart.setup(0, 9600, 8, uart.PARITY_NONE, uart.STOPBITS_1)
+  --self:readPMFromUart(pmsCallback)
+  return self
 end
 
 function PMS5003:TwoBytesToNumber(byte1, byte2)
@@ -14,8 +15,8 @@ end
 
 function PMS5003:readPMFromUart(pmsCallback)
   local startByte1 = 0x42
-  uart.on("data", string.char(startByte1), function(data)
-    uart.on("data", 31, function(data)
+  uart.on('data', string.char(startByte1), function(data)
+    uart.on('data', 31, function(data)
 
       local startByte2 = string.byte(data, 1)
       local framelen = self:TwoBytesToNumber(string.byte(data, 2), string.byte(data, 3))
@@ -38,4 +39,22 @@ function PMS5003:readPMFromUart(pmsCallback)
       self:readPMFromUart(pmsCallback)
     end, 0)
   end, 0)
+end
+
+function PMS5003:unregister()
+  uart.on('data')
+  self = nil
+  PMS5003 = nil
+end
+
+function PMS5003:sleep()
+  print('try putting pms5003 into sleep mode')
+  uart.write(0, string.char(0x42, 0x4d, 0xe4, 0x00, 0x00, 0x01, 0x73))
+  print('finised putting pms5003 into sleep mode')
+end
+
+function PMS5003:wakeup()
+  print('try waking up pms5003')
+  uart.write(0, string.char(0x42, 0x4d, 0xe4, 0x00, 0x01, 0x01, 0x74))
+  print('woking up pms5003')
 end

@@ -27,3 +27,11 @@ end
 function cos(x)
   return 1 - ((x^2)/2) + ((x^4)/24) - ((x^6)/720) + ((x^8)/40320)
 end
+
+function unregisterTools()
+  round = nil
+  roundFixed = nil
+  sin = nil
+  cos = nil
+  unregisterTools = nil
+end

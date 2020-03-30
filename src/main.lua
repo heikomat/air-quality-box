@@ -1,5 +1,7 @@
 node.setcpufreq(node.CPU160MHZ)
 
+local version = 4;
+
 local pinSDA = 7
 local pinSCL = 5
 i2c.setup(0, pinSDA, pinSCL, i2c.SLOW)
@@ -89,6 +91,7 @@ state = {
   }
 }
 
+local old_print = print
 local initWifi = require 'initWifi'
 local connectMqtt = require 'connectMqtt'
 local updateIaq = require 'iaq'
@@ -97,6 +100,11 @@ require 'sgp30'
 require 'mh-z19'
 require 'pms5003'
 require 'display'
+
+function unrequire(m)
+	package.loaded[m] = nil
+	_G[m] = nil
+end
 
 state.wifi.connecting = initWifi(function()
   state.wifi.connected = true
@@ -107,29 +115,47 @@ state.wifi.connecting = initWifi(function()
     state.mqtt.connected = true
     state.mqtt.connecting = false
     local clientId = getMqttClientId()
+    publishMqtt('air_quality/' .. clientId .. '/connected', version, false)
     subscribeMqtt('air_quality/' .. clientId .. '/update_lfs')
+    subscribeMqtt('air_quality/' .. clientId .. '/wakeup_co2')
+    subscribeMqtt('air_quality/' .. clientId .. '/sleep_co2')
 
     -- also send print outputs to mqtt
-    old_print = print
     print = function(...)
       old_print(...)
-      local jsonData = sjson.encoder({...}):read(2048)
-      publishMqtt('air_quality/' .. clientId .. '/console', jsonData, false)
+      if state.mqtt.connected then
+        local jsonData = sjson.encoder({...}):read(2048)
+        publishMqtt('air_quality/' .. clientId .. '/console', jsonData, false)
+      end
     end
   end, function()
     -- connection lost
+    if state == nil then
+      return
+    end
     state.mqtt.connected = false
     state.mqtt.connecting = true
   end, function(topic, message)
-    print(topic, message)
-    if topic == 'air_quality/' .. getMqttClientId() .. '/update_lfs' then
+    local clientId = getMqttClientId()
+    print(topic)
+    if topic == 'air_quality/' .. clientId .. '/update_lfs' then
       local updateOptions = sjson.decoder():write(message)
+      unregisterEverything()
       LFS.HTTP_OTA(updateOptions.host, updateOptions.port, updateOptions.dir, updateOptions.imageName)
+    end
+
+    if topic == 'air_quality/' .. clientId .. '/sleep_co2' then
+      pms5003:sleep()
+    end
+
+    if topic == 'air_quality/' .. clientId .. '/wakeup_co2' then
+      pms5003:wakeup()
     end
   end)
 end)
 
-tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)
+bme280Timer = tmr.create()
+bme280Timer:alarm(350 , tmr.ALARM_AUTO, function(timer)
   temperature, pressure, humidity = bme280.read()
   if temperature ~= nil then
     state.sensors.temperature.raw = temperature
@@ -164,6 +190,10 @@ sgp30 = SGP30:new(nil, nil, function(eCO2, TVOCppb, TVOCmgm3, eCO2Baseline, TVOC
   state.debug.sgp30Baseline.lastSaveWasSuccessful = lastBaselineSaveWasSuccessful
   state.debug.sgp30Baseline.lastSaveResult = lastBaselineSaveResult
 end, function()
+  if state == nil then
+    return
+  end
+
   if state.sensors.temperatureRaw == nil or state.sensors.humidityRaw == nil then
     return nil, nil
   end
@@ -174,12 +204,20 @@ end, function()
 end)
 
 mhz19 = MHZ19:new(2, function(co2)
+  if state == nil then
+    return
+  end
+
   state.sensors.co2.raw = co2
   state.sensors.co2.ppm = co2
   state.sensors.co2.text = co2 .. 'ppm'
 end)
 
 pms5003 = PMS5003:new(function(pm10, pm25, pm100)
+  if state == nil then
+    return
+  end
+
   state.sensors.pm10.raw = pm10;
   state.sensors.pm10.mgm3 = pm10;
   state.sensors.pm10.text = pm10 .. 'μg/m3';
@@ -194,22 +232,40 @@ pms5003 = PMS5003:new(function(pm10, pm25, pm100)
 end)
 
 -- don't refresh too often, as it is slow (~230ms) and might result in gpio-interrupt-callbacks not being fired
-tmr.create():alarm(1000 , tmr.ALARM_AUTO, function(timer)
-    updateDisplay(state)
+displayTimer = tmr.create()
+displayTimer:alarm(1000 , tmr.ALARM_AUTO, function(timer)
+  if state == nil then
+    return
+  end
+  --updateDisplay(state)
 end)
 
-tmr.create():alarm(350 , tmr.ALARM_AUTO, function(timer)
+iaqTimer = tmr.create()
+iaqTimer:alarm(350 , tmr.ALARM_AUTO, function(timer)
+  if state == nil then
+    return
+  end
   calculateIaq(state.sensors, state.iaq)
 end)
 
-tmr.create():alarm(10000 , tmr.ALARM_AUTO, function(timer)
+mqttTimer = tmr.create()
+mqttTimer:alarm(10000 , tmr.ALARM_AUTO, function(timer)
+  if state == nil then
+    return
+  end
+
   if state.mqtt.connected then
     local jsonData = sjson.encoder(state):read(2048)
     publishMqtt('air_quality', jsonData, true)
   end
 end)
 
-tmr.create():alarm(1000 , tmr.ALARM_AUTO, function(timer)
+wifiTimer = tmr.create()
+wifiTimer:alarm(1000 , tmr.ALARM_AUTO, function(timer)
+  if state == nil then
+    return
+  end
+
   if not state.wifi.connected then
     return
   end
@@ -218,11 +274,59 @@ tmr.create():alarm(1000 , tmr.ALARM_AUTO, function(timer)
   local minSignal = -80
   state.wifi.rssi = wifi.sta.getrssi()
 
-  if state.wifi.rssi >= maxSignal then
-    state.wifi.signalStrength = 100
-  elseif state.wifi.rssi <= minSignal then
-    state.wifi.signalStrength = 0
-  else
-    state.wifi.signalStrength = math.floor(((math.abs(state.wifi.rssi) - math.abs(minSignal)) / (math.abs(maxSignal) - math.abs(minSignal)))*100)
+  if state.wifi.rssi ~= nil then
+    if state.wifi.rssi >= maxSignal then
+      state.wifi.signalStrength = 100
+    elseif state.wifi.rssi <= minSignal then
+      state.wifi.signalStrength = 0
+    else
+      state.wifi.signalStrength = math.floor(((math.abs(state.wifi.rssi) - math.abs(minSignal)) / (math.abs(maxSignal) - math.abs(minSignal)))*100)
+    end
   end
 end)
+
+function unregisterEverything()
+  wifiTimer:unregister()
+  wifiTimer = nil
+  displayTimer:unregister()
+  displayTimer = nil
+  iaqTimer:unregister()
+  iaqTimer = nil
+  mqttTimer:unregister()
+  mqttTimer = nil
+  bme280Timer:unregister()
+  bme280Timer = nil
+  print = old_print
+  state = nil
+  initWifi = nil
+  connectMqtt = nil
+  updateIaq = nil
+  sgp30:unregister()
+  sgp30 = nil
+  mhz19:unregister()
+  mhz19 = nil
+  pms5003:unregister()
+  pms5003 = nil
+  unregisterDisplay()
+  unregisterWifi()
+  unregisterIaq()
+  unregisterMqtt()
+  unregisterTools()
+  unregisterEverything = nil
+  loadfile = nil
+  dofile = nil
+  unrequire 'initWifi'
+  unrequire 'connectMqtt'
+  unrequire 'iaq'
+  unrequire 'tools'
+  unrequire 'sgp30'
+  unrequire 'mh-z19'
+  unrequire 'pms5003'
+  unrequire 'display'
+  unrequire '_init'
+  unrequire 'main'
+  unrequire = nil
+  collectgarbage()
+  tmr.delay(100000)
+  collectgarbage()
+end

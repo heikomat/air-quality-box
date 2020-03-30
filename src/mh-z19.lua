@@ -5,11 +5,12 @@ MHZ19 = {}
 function MHZ19:new(gpioPin, co2Callback)
   setmetatable({}, self)
   self.__index = self
+  self.gpioPin = gpioPin
 
   local measueStartTimestamp
 
   gpio.mode(gpioPin, gpio.INT)
-  gpio.trig(gpioPin, 'both', function(level, timestamp, eventcount)
+  gpio.trig(self.gpioPin, 'both', function(level, timestamp, eventcount)
     local isMeasurementEnd = level == 0
 
     local eventWasMissed = eventcount > 1
@@ -34,10 +35,18 @@ function MHZ19:new(gpioPin, co2Callback)
     co2 = self:calculateCo2(timeHighMilliseconds)
     co2Callback(co2)
   end)
+
+  return self
 end
 
 function MHZ19:calculateCo2(timeHigh)
   -- see here for why 5000 and not 2000:
   -- https://electronics.stackexchange.com/questions/262473/mh-z19-co2-sensor-giving-diferent-values-using-uart-and-pwm
   return math.floor(5000 * (timeHigh-2) / 1000);
+end
+
+function MHZ19:unregister()
+  gpio.trig(self.gpioPin, 'both')
+  self = nil
+  MHZ19 = nil
 end

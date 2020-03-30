@@ -109,3 +109,16 @@ function drawWifiStatus(newState)
     end
   end
 end
+
+function unregisterDisplay()
+  icons = nil
+  display = nil
+  sla = nil
+  drawGauge = nil
+  updateDisplay = nil
+  drawStaticUI = nil
+  drawWifiStatus = nil
+  unregisterDisplay = nil
+  wifiConnectingBlink = nil
+  unrequire 'tools'
+end

@@ -148,4 +148,11 @@ function valueToScore(value)
   return round(value, 2)
 end
 
+function unregisterIaq()
+  valueToScore = nil
+  calculateIaq = nil
+  unregisterIaq = nil
+  unrequire 'tools'
+end
+
 return calculateIaq
