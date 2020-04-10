@@ -74,5 +74,3 @@ function unregisterMqtt()
   mqttClient:close()
   mqttClient = nil
 end
-
-return connectMqtt

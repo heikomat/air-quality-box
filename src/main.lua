@@ -92,9 +92,9 @@ state = {
 }
 
 local old_print = print
-local initWifi = require 'initWifi'
-local connectMqtt = require 'connectMqtt'
-local updateIaq = require 'iaq'
+require 'initWifi'
+require 'connectMqtt'
+require 'iaq'
 require 'tools'
 require 'sgp30'
 require 'mh-z19'
@@ -112,6 +112,7 @@ state.wifi.connecting = initWifi(function()
 
   state.mqtt.connecting = connectMqtt(function()
     -- connection acquired
+    print('mqtt connected')
     state.mqtt.connected = true
     state.mqtt.connecting = false
     local clientId = getMqttClientId()
@@ -326,7 +327,5 @@ function unregisterEverything()
   unrequire '_init'
   unrequire 'main'
   unrequire = nil
-  collectgarbage()
-  tmr.delay(100000)
   collectgarbage()
 end

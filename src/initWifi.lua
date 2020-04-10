@@ -30,5 +30,3 @@ function unregisterWifi()
   unregisterWifi = nil
   wifiIsConnected = nil
 end
-
-return initWifi

@@ -154,5 +154,3 @@ function unregisterIaq()
   unregisterIaq = nil
   unrequire 'tools'
 end
-
-return calculateIaq
