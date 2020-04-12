@@ -1,6 +1,6 @@
 node.setcpufreq(node.CPU160MHZ)
 
-local version = 7;
+local version = 8;
 
 local pinSDA = 7
 local pinSCL = 5
@@ -137,7 +137,6 @@ state.wifi.connecting = initWifi(function()
     state.mqtt.connecting = true
   end, function(topic, message)
     local clientId = getMqttClientId()
-    print(topic)
     if topic == 'air_quality/' .. clientId .. '/update_lfs' then
       local updateOptions = sjson.decoder():write(message)
       unregisterEverything()

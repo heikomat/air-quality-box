@@ -48,13 +48,11 @@ function PMS5003:unregister()
 end
 
 function PMS5003:sleep()
-  print('try putting pms5003 into sleep mode')
+  print('putting pms5003 into sleep mode')
   uart.write(0, string.char(0x42, 0x4d, 0xe4, 0x00, 0x00, 0x01, 0x73))
-  print('finised putting pms5003 into sleep mode')
 end
 
 function PMS5003:wakeup()
-  print('try waking up pms5003')
+  print('waking up pms5003')
   uart.write(0, string.char(0x42, 0x4d, 0xe4, 0x00, 0x01, 0x01, 0x74))
-  print('woking up pms5003')
 end
