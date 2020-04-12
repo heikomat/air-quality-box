@@ -17,7 +17,7 @@ function initWifi(callback)
   tmr.create():alarm(500 , tmr.ALARM_AUTO, function(timer)
     if wifi.sta.getip() ~= nil then
       wifiIsConnected = true
-      timer:stop()
+      timer:unregister()
       callback()
     end
   end)

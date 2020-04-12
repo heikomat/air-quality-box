@@ -64,11 +64,11 @@ finalise = function(sck)
   local s = file.stat(image)
   if (s and size == s.size) then
     wifi.setmode(wifi.NULLMODE, false)
-    print('A', collectgarbage('count'))
-    print('B', collectgarbage('count'))
-      -- run as separate task to maximise RAM available
-      --node.flashreload(image)
-      node.task.post(function() node.flashreload(image) end)
+    collectgarbage()
+    collectgarbage()
+    -- run as separate task to maximise RAM available
+    --node.flashreload(image)
+    node.task.post(function() node.flashreload(image) end)
   else
     print"Invalid save of image file"
   end

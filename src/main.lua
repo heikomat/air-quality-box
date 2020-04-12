@@ -112,7 +112,6 @@ state.wifi.connecting = initWifi(function()
 
   state.mqtt.connecting = connectMqtt(function()
     -- connection acquired
-    print('mqtt connected')
     state.mqtt.connected = true
     state.mqtt.connecting = false
     local clientId = getMqttClientId()
@@ -155,7 +154,7 @@ state.wifi.connecting = initWifi(function()
   end)
 end)
 
-bme280Timer = tmr.create()
+local bme280Timer = tmr.create()
 bme280Timer:alarm(350 , tmr.ALARM_AUTO, function(timer)
   temperature, pressure, humidity = bme280.read()
   if temperature ~= nil then
@@ -238,7 +237,7 @@ displayTimer:alarm(1000 , tmr.ALARM_AUTO, function(timer)
   if state == nil then
     return
   end
-  --updateDisplay(state)
+  updateDisplay(state)
 end)
 
 iaqTimer = tmr.create()
