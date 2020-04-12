@@ -1,6 +1,6 @@
 node.setcpufreq(node.CPU160MHZ)
 
-local version = 4;
+local version = 7;
 
 local pinSDA = 7
 local pinSCL = 5
@@ -141,14 +141,12 @@ state.wifi.connecting = initWifi(function()
     if topic == 'air_quality/' .. clientId .. '/update_lfs' then
       local updateOptions = sjson.decoder():write(message)
       unregisterEverything()
+      clientId = nil
+      message = nil
       LFS.HTTP_OTA(updateOptions.host, updateOptions.port, updateOptions.dir, updateOptions.imageName)
-    end
-
-    if topic == 'air_quality/' .. clientId .. '/sleep_co2' then
+    elseif topic == 'air_quality/' .. clientId .. '/sleep_co2' then
       pms5003:sleep()
-    end
-
-    if topic == 'air_quality/' .. clientId .. '/wakeup_co2' then
+    elseif topic == 'air_quality/' .. clientId .. '/wakeup_co2' then
       pms5003:wakeup()
     end
   end)

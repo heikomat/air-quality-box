@@ -12,6 +12,7 @@ local n, total, size = 0, 0
 
 doRequest = function(socket, hostIP) -- luacheck: no unused
   if hostIP then
+    file.remove(image)
     local con = net.createConnection(net.TCP,0)
     con:connect(port,hostIP)
     -- Note that the current dev version can only accept uncompressed LFS images
@@ -63,12 +64,26 @@ finalise = function(sck)
   sck:close()
   local s = file.stat(image)
   if (s and size == s.size) then
+    print('disconnecting')
+    wifi.sta.disconnect()
     wifi.setmode(wifi.NULLMODE, false)
-    collectgarbage()
-    collectgarbage()
-    -- run as separate task to maximise RAM available
-    --node.flashreload(image)
-    node.task.post(function() node.flashreload(image) end)
+    doRequest = nil
+    firstRec = nil
+    subsRec = nil
+    finalise = nil
+    s = nil
+    LFS = nil
+    _G.LFS = nil
+    print('A', collectgarbage('count'))
+    tmr.create():alarm(1500 , tmr.ALARM_SINGLE, function(timer)
+      print('B', collectgarbage('count'))
+      -- run as separate task to maximise RAM available
+      --node.flashreload(image)
+      node.task.post(function()
+        print('C', collectgarbage('count'))
+        node.flashreload(image)
+      end)
+    end)
   else
     print"Invalid save of image file"
   end

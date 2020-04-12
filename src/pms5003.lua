@@ -4,8 +4,8 @@ function PMS5003:new(pmsCallback)
   setmetatable({}, self)
   self.__index = self
 
-  --uart.setup(0, 9600, 8, uart.PARITY_NONE, uart.STOPBITS_1)
-  --self:readPMFromUart(pmsCallback)
+  uart.setup(0, 9600, 8, uart.PARITY_NONE, uart.STOPBITS_1)
+  self:readPMFromUart(pmsCallback)
   return self
 end
 

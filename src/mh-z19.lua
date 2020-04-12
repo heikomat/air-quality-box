@@ -46,7 +46,7 @@ function MHZ19:calculateCo2(timeHigh)
 end
 
 function MHZ19:unregister()
-  gpio.trig(self.gpioPin, 'both')
+  gpio.trig(self.gpioPin, 'none')
   self = nil
   MHZ19 = nil
 end
