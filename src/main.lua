@@ -1,6 +1,6 @@
 node.setcpufreq(node.CPU160MHZ)
 
-local version = 8;
+local version = 18;
 
 local pinSDA = 7
 local pinSCL = 5
@@ -70,6 +70,12 @@ state = {
       lastSaveWasSuccessful = nil,
       lastSaveResult = nil,
     },
+    pms5003 = {
+      secondsTilNextMeasurementStart = nil,
+      secondsTilNextMeasurementEnd = nil,
+      isMeasuring = nil,
+      forcedOnReason = nil,
+    },
   },
   iaq = {
     summary = {
@@ -116,9 +122,7 @@ state.wifi.connecting = initWifi(function()
     state.mqtt.connecting = false
     local clientId = getMqttClientId()
     publishMqtt('air_quality/' .. clientId .. '/connected', version, false)
-    subscribeMqtt('air_quality/' .. clientId .. '/update_lfs')
-    subscribeMqtt('air_quality/' .. clientId .. '/wakeup_co2')
-    subscribeMqtt('air_quality/' .. clientId .. '/sleep_co2')
+    subscribeMqtt('air_quality/' .. clientId .. '/command/#')
 
     -- also send print outputs to mqtt
     print = function(...)
@@ -137,16 +141,21 @@ state.wifi.connecting = initWifi(function()
     state.mqtt.connecting = true
   end, function(topic, message)
     local clientId = getMqttClientId()
-    if topic == 'air_quality/' .. clientId .. '/update_lfs' then
+    if topic == 'air_quality/' .. clientId .. '/command/update_lfs' then
       local updateOptions = sjson.decoder():write(message)
       unregisterEverything()
       clientId = nil
       message = nil
       LFS.HTTP_OTA(updateOptions.host, updateOptions.port, updateOptions.dir, updateOptions.imageName)
-    elseif topic == 'air_quality/' .. clientId .. '/sleep_co2' then
+    elseif topic == 'air_quality/' .. clientId .. '/command/sleep_pms' then
       pms5003:sleep()
-    elseif topic == 'air_quality/' .. clientId .. '/wakeup_co2' then
+    elseif topic == 'air_quality/' .. clientId .. '/command/wakeup_pms' then
       pms5003:wakeup()
+    elseif topic == 'air_quality/' .. clientId .. '/command/clear_calibration' then
+      sgp30:deleteAQIBaselineFile()
+      node.restart()
+    elseif topic == 'air_quality/' .. clientId .. '/command/reboot' then
+      node.restart()
     end
   end)
 end)
@@ -186,6 +195,7 @@ sgp30 = SGP30:new(nil, nil, function(eCO2, TVOCppb, TVOCmgm3, eCO2Baseline, TVOC
   state.debug.sgp30Baseline.secondsTilNextSave = secondsTilNextBaselineSave
   state.debug.sgp30Baseline.lastSaveWasSuccessful = lastBaselineSaveWasSuccessful
   state.debug.sgp30Baseline.lastSaveResult = lastBaselineSaveResult
+  checkPmsForceOn()
 end, function()
   if state == nil then
     return
@@ -208,6 +218,7 @@ mhz19 = MHZ19:new(2, function(co2)
   state.sensors.co2.raw = co2
   state.sensors.co2.ppm = co2
   state.sensors.co2.text = co2 .. 'ppm'
+  checkPmsForceOn()
 end)
 
 pms5003 = PMS5003:new(function(pm10, pm25, pm100)
@@ -226,7 +237,25 @@ pms5003 = PMS5003:new(function(pm10, pm25, pm100)
   state.sensors.pm100.raw = pm100;
   state.sensors.pm100.mgm3 = pm100;
   state.sensors.pm100.text = pm100 .. 'μg/m3';
+end, function(secondsTilNextMeasurementStart, secondsTilNextMeasurementEnd, isMeasuring, forcedOnReason)
+  state.debug.pms5003.secondsTilNextMeasurementStart = secondsTilNextMeasurementStart
+  state.debug.pms5003.secondsTilNextMeasurementEnd = secondsTilNextMeasurementEnd
+  state.debug.pms5003.isMeasuring = isMeasuring
+  state.debug.pms5003.forcedOnReason = forcedOnReason
 end)
+
+function checkPmsForceOn()
+  if state == nil or pms5003 == nil then
+    return
+  end
+
+  local windowOpen = state.sensors.co2.ppm ~= nil and state.sensors.co2.ppm < 500 and state.sensors.tvoc.ppbRaw ~= nil and state.sensors.tvoc.ppbRaw < 130
+  if windowOpen then
+    pms5003:forceOn('window is open')
+  else
+    pms5003:stopForceOn()
+  end
+end
 
 -- don't refresh too often, as it is slow (~230ms) and might result in gpio-interrupt-callbacks not being fired
 displayTimer = tmr.create()
@@ -298,6 +327,7 @@ function unregisterEverything()
   initWifi = nil
   connectMqtt = nil
   updateIaq = nil
+  checkPmsForceOn = nil
   sgp30:unregister()
   sgp30 = nil
   mhz19:unregister()

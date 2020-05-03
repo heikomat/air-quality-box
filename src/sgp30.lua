@@ -52,7 +52,7 @@ function SGP30:new(busId, deviceAddress, iaqCallback, getHumidityCompensationDat
     end
   end)
 
-  -- check once a minute if the baseline needs to be saved
+  -- check once per hour if the baseline needs to be saved
   self.saveBaselineTimer = tmr.create()
   self.saveBaselineTimer:alarm(oneHour * 1000 , tmr.ALARM_AUTO, function(timer)
     local now = tmr.time()
@@ -211,6 +211,10 @@ function SGP30:writeAQIBaselineToFile()
   end
 
   return true, 'baseline sucessfully saved'
+end
+
+function SGP30:deleteAQIBaselineFile()
+  file.remove('sgp30_baseline.txt')
 end
 
 function SGP30:updateHumidityCompensation(getHumidityCompensationDataCallback)
