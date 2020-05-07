@@ -1,6 +1,6 @@
 node.setcpufreq(node.CPU160MHZ)
 
-local version = 18;
+local version = 21;
 
 local pinSDA = 7
 local pinSCL = 5
@@ -249,7 +249,7 @@ function checkPmsForceOn()
     return
   end
 
-  local windowOpen = state.sensors.co2.ppm ~= nil and state.sensors.co2.ppm < 500 and state.sensors.tvoc.ppbRaw ~= nil and state.sensors.tvoc.ppbRaw < 130
+  local windowOpen = state.sensors.co2.ppm ~= nil and state.sensors.co2.ppm < 450 and state.sensors.tvoc.ppbRaw ~= nil and state.sensors.tvoc.ppbRaw < 100
   if windowOpen then
     pms5003:forceOn('window is open')
   else
