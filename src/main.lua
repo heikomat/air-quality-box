@@ -1,9 +1,11 @@
-node.setcpufreq(node.CPU160MHZ)
+--node.setcpufreq(node.CPU160MHZ)
 
-local version = 21;
+local version = 26;
 
 local pinSDA = 7
 local pinSCL = 5
+local temperatureAdjustment = -290 -- -2.9°C
+local humidityAdjustment = 9000 -- +9%
 i2c.setup(0, pinSDA, pinSCL, i2c.SLOW)
 bme280.setup()
 
@@ -21,6 +23,7 @@ state = {
   sensors = {
     temperature = {
       raw = nil,
+      adjusted = nil,
       celsius = nil,
       text = nil,
     },
@@ -31,6 +34,7 @@ state = {
     },
     humidity = {
       raw = nil,
+      adjusted = nil,
       percent = nil,
       text = nil,
     },
@@ -165,7 +169,8 @@ bme280Timer:alarm(350 , tmr.ALARM_AUTO, function(timer)
   temperature, pressure, humidity = bme280.read()
   if temperature ~= nil then
     state.sensors.temperature.raw = temperature
-    state.sensors.temperature.celsius = state.sensors.temperature.raw / 100
+    state.sensors.temperature.adjusted = temperature + temperatureAdjustment
+    state.sensors.temperature.celsius = state.sensors.temperature.adjusted / 100
     state.sensors.temperature.text =  roundFixed(state.sensors.temperature.celsius, 1) .. 'C'
   end
 
@@ -177,7 +182,8 @@ bme280Timer:alarm(350 , tmr.ALARM_AUTO, function(timer)
 
   if humidity ~= nil then
     state.sensors.humidity.raw = humidity
-    state.sensors.humidity.percent = state.sensors.humidity.raw / 1000
+    state.sensors.humidity.adjusted = humidity + humidityAdjustment
+    state.sensors.humidity.percent = state.sensors.humidity.adjusted / 1000
     state.sensors.humidity.text = roundFixed(state.sensors.humidity.raw / 1000, 1) .. '%'
   end
 end)
