@@ -275,7 +275,7 @@ sgp30 = SGP30:new(nil, nil, function(eCO2, TVOCppb, TVOCmgm3, eCO2Baseline, TVOC
   state.debug.sgp30Baseline.secondsTilNextSave = secondsTilNextBaselineSave
   state.debug.sgp30Baseline.lastSaveWasSuccessful = lastBaselineSaveWasSuccessful
   state.debug.sgp30Baseline.lastSaveResult = lastBaselineSaveResult
-  --checkPmsForceOn()
+  checkPmsForceOn()
 end, function()
   if state == nil then
     return
@@ -298,9 +298,9 @@ mhz19 = MHZ19:new(2, function(co2)
   state.sensors.co2.raw = co2
   state.sensors.co2.ppm = co2
   state.sensors.co2.text = co2 .. 'ppm'
-  --checkPmsForceOn()
+  checkPmsForceOn()
 end)
---[[
+
 pms5003 = PMS5003:new(function(pm10, pm25, pm100)
   if state == nil then
     return
@@ -336,7 +336,6 @@ function checkPmsForceOn()
     pms5003:stopForceOn()
   end
 end
---]]
 
 -- don't refresh too often, as it is slow (~230ms) and might result in gpio-interrupt-callbacks not being fired
 displayTimer = tmr.create()
