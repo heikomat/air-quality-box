@@ -59,7 +59,7 @@ function calculateIaq(sensors, iaq)
   if sensors.humidity.adjusted.percent ~= nil then
     if sensors.humidity.adjusted.percent <= 30 then
       iaq.sensorScores.humidity = valueToScore(math.max(5 - ((30 - sensors.humidity.adjusted.percent) / 5), 0))
-    elseif sensors.humidity.percent > 50 then
+    elseif sensors.humidity.adjusted.percent > 50 then
       iaq.sensorScores.humidity = valueToScore(math.max(5 - ((sensors.humidity.adjusted.percent - 50) / 10), 0))
     else
       iaq.sensorScores.humidity = valueToScore(5)

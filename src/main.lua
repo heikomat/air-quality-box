@@ -1,6 +1,6 @@
---node.setcpufreq(node.CPU160MHZ)
+node.setcpufreq(node.CPU160MHZ)
 
-local version = 35;
+local version = 36;
 
 local pinSDA = 7
 local pinSCL = 5
@@ -361,8 +361,11 @@ mqttTimer:alarm(10000 , tmr.ALARM_AUTO, function(timer)
   end
 
   if state.mqtt.connected then
-    local jsonData = sjson.encoder(state):read(2048)
-    publishMqtt('air_quality', jsonData, true)
+    local clientId = getMqttClientId()
+    local jsonData = sjson.encoder(state.sensors):read(2048)
+    publishMqtt('air_quality/' .. clientId .. '/sensors', jsonData, false)
+    jsonData = sjson.encoder(state.iaq):read(2048)
+    publishMqtt('air_quality/' .. clientId .. '/iaq', jsonData, false)
   end
 end)
 
