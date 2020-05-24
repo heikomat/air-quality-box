@@ -56,11 +56,11 @@ function calculateIaq(sensors, iaq)
 
   -- humidity evaluation
   -- https://www.iotacommunications.com/blog/indoor-air-quality-parameters/
-  if sensors.humidity.percent ~= nil then
-    if sensors.humidity.percent <= 30 then
-      iaq.sensorScores.humidity = valueToScore(math.max(5 - ((30 - sensors.humidity.percent) / 5), 0))
+  if sensors.humidity.adjusted.percent ~= nil then
+    if sensors.humidity.adjusted.percent <= 30 then
+      iaq.sensorScores.humidity = valueToScore(math.max(5 - ((30 - sensors.humidity.adjusted.percent) / 5), 0))
     elseif sensors.humidity.percent > 50 then
-      iaq.sensorScores.humidity = valueToScore(math.max(5 - ((sensors.humidity.percent - 50) / 10), 0))
+      iaq.sensorScores.humidity = valueToScore(math.max(5 - ((sensors.humidity.adjusted.percent - 50) / 10), 0))
     else
       iaq.sensorScores.humidity = valueToScore(5)
     end
@@ -69,16 +69,16 @@ function calculateIaq(sensors, iaq)
 
     issue = nil
     solution = nil
-    if sensors.humidity.percent < 20 then
+    if sensors.humidity.adjusted.percent < 20 then
       issue = 'dry2'
       solution = 'humidify'
-    elseif sensors.humidity.percent < 25 then
+    elseif sensors.humidity.adjusted.percent < 25 then
       issue = 'dry1'
       solution = 'humidify'
-    elseif sensors.humidity.percent > 90 then
+    elseif sensors.humidity.adjusted.percent > 90 then
       issue = 'humid2'
       solution = 'open_window'
-    elseif sensors.humidity.percent > 70 then
+    elseif sensors.humidity.adjusted.percent > 70 then
       issue = 'humid1'
       solution = 'open_window'
     end
