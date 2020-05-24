@@ -8,24 +8,24 @@ function calculateIaq(sensors, iaq)
 
   -- temperature evaluation
   -- https://www.iotacommunications.com/blog/indoor-air-quality-parameters/
-  if sensors.temperature.celsius ~= nil then
-    if sensors.temperature.celsius < 20 then
-      iaq.sensorScores.temperature = valueToScore(math.max(5 - (20 - sensors.temperature.celsius), 0))
-    elseif sensors.temperature.celsius > 23 then
-      iaq.sensorScores.temperature = valueToScore(math.max(5 - (sensors.temperature.celsius - 23), 0))
+  if sensors.temperature.adjusted.celsius ~= nil then
+    if sensors.temperature.adjusted.celsius < 20 then
+      iaq.sensorScores.temperature = valueToScore(math.max(5 - (20 - sensors.temperature.adjusted.celsius), 0))
+    elseif sensors.temperature.adjusted.celsius > 23 then
+      iaq.sensorScores.temperature = valueToScore(math.max(5 - (sensors.temperature.adjusted.celsius - 23), 0))
     else
       iaq.sensorScores.temperature = valueToScore(5)
     end
   
     table.insert(airQualityScores, iaq.sensorScores.temperature)
 
-    if sensors.temperature.celsius < 14 then
+    if sensors.temperature.adjusted.celsius < 14 then
       table.insert(iaq.recommendations, "It's freezing! Turn the heat up!")
-    elseif sensors.temperature.celsius < 16 then
+    elseif sensors.temperature.adjusted.celsius < 16 then
       table.insert(iaq.recommendations, "Kinda chill in here. You might want to turn on the heating")
-    elseif sensors.temperature.celsius > 27 then
+    elseif sensors.temperature.adjusted.celsius > 27 then
       table.insert(iaq.recommendations, "It's really hot! Try to cool the room if you can")
-    elseif sensors.temperature.celsius > 25 then
+    elseif sensors.temperature.adjusted.celsius > 25 then
       table.insert(iaq.recommendations, "Kinda warm in here. Consider cooling the room if possible")
     end
   end

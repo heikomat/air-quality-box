@@ -1,13 +1,14 @@
 --node.setcpufreq(node.CPU160MHZ)
 
-local version = 26;
+local version = 33;
 
 local pinSDA = 7
 local pinSCL = 5
-local temperatureAdjustment = -290 -- -2.9°C
-local humidityAdjustment = 9000 -- +9%
+local maxTempDifferenceBetweenInsideAndOutside = 300 -- 3.0°C
+local maxTempAdjustment = -290 -- -2.9°C
+local maxHumidityDifferenceBetweenInsideAndOutside = 1 -- 3.0°C9°C
+local maxHumidityAdjustment = 9000 -- +9%
 i2c.setup(0, pinSDA, pinSCL, i2c.SLOW)
-bme280.setup()
 
 state = {
   wifi = {
@@ -22,21 +23,50 @@ state = {
   },
   sensors = {
     temperature = {
-      raw = nil,
-      adjusted = nil,
-      celsius = nil,
-      text = nil,
+      inside = {
+        raw = nil,
+        celsius = nil,
+        text = nil,
+      },
+      outside = {
+        raw = nil,
+        celsius = nil,
+        text = nil,
+      },
+      adjusted = {
+        raw = nil,
+        celsius = nil,
+        text = nil,
+      },
     },
     pressure = {
-      raw = nil,
-      hPa = nil,
-      text = nil,
+      inside = {
+        raw = nil,
+        hPa = nil,
+        text = nil,
+      },
+      outside = {
+        raw = nil,
+        hPa = nil,
+        text = nil,
+      },
     },
     humidity = {
-      raw = nil,
-      adjusted = nil,
-      percent = nil,
-      text = nil,
+      inside = {
+        raw = nil,
+        percent = nil,
+        text = nil,
+      },
+      outside = {
+        raw = nil,
+        percent = nil,
+        text = nil,
+      },
+      adjusted = {
+        raw = nil,
+        percent = nil,
+        text = nil,
+      },
     },
     tvoc = {
       ppbRaw = nil,
@@ -166,25 +196,73 @@ end)
 
 local bme280Timer = tmr.create()
 bme280Timer:alarm(350 , tmr.ALARM_AUTO, function(timer)
-  temperature, pressure, humidity = bme280.read()
-  if temperature ~= nil then
-    state.sensors.temperature.raw = temperature
-    state.sensors.temperature.adjusted = temperature + temperatureAdjustment
-    state.sensors.temperature.celsius = state.sensors.temperature.adjusted / 100
-    state.sensors.temperature.text =  roundFixed(state.sensors.temperature.celsius, 1) .. 'C'
+
+  local setup = bme280.setup()
+  temperatureOutside, pressureOutside, humidityOutside = bme280.read()
+  i2c.setup(0, pinSCL, pinSDA, i2c.SLOW)
+  local setup2 = bme280.setup()
+  temperatureInside, pressureInside, humidityInside = bme280.read()
+  i2c.setup(0, pinSDA, pinSCL, i2c.SLOW)
+  if temperatureOutside ~= nil then
+    state.sensors.temperature.outside.raw = temperatureOutside
+    state.sensors.temperature.outside.celsius = state.sensors.temperature.outside.raw / 100
+    state.sensors.temperature.outside.text = roundFixed(state.sensors.temperature.outside.celsius, 1) .. 'C'
+  end
+  if temperatureInside ~= nil then
+    state.sensors.temperature.inside.raw = temperatureInside
+    state.sensors.temperature.inside.celsius = state.sensors.temperature.inside.raw / 100
+    state.sensors.temperature.inside.text = roundFixed(state.sensors.temperature.inside.celsius, 1) .. 'C'
   end
 
-  if pressure ~= nil then
-    state.sensors.pressure.raw = pressure
-    state.sensors.pressure.hPa = state.sensors.pressure.raw / 1000
-    state.sensors.pressure.text = round(state.sensors.pressure.hPa) .. 'hpa'
+  if pressureOutside ~= nil then
+    state.sensors.pressure.outside.raw = pressureOutside
+    state.sensors.pressure.outside.hPa = state.sensors.pressure.outside.raw / 1000
+    state.sensors.pressure.outside.text = round(state.sensors.pressure.outside.hPa) .. 'hpa'
+  end
+  if pressureInside ~= nil then
+    state.sensors.pressure.inside.raw = pressureInside
+    state.sensors.pressure.inside.hPa = state.sensors.pressure.inside.raw / 1000
+    state.sensors.pressure.inside.text = round(state.sensors.pressure.inside.hPa) .. 'hpa'
   end
 
-  if humidity ~= nil then
-    state.sensors.humidity.raw = humidity
-    state.sensors.humidity.adjusted = humidity + humidityAdjustment
-    state.sensors.humidity.percent = state.sensors.humidity.adjusted / 1000
-    state.sensors.humidity.text = roundFixed(state.sensors.humidity.raw / 1000, 1) .. '%'
+  if humidityOutside ~= nil then
+    state.sensors.humidity.outside.raw = humidityOutside
+    state.sensors.humidity.outside.percent = state.sensors.humidity.outside.raw / 1000
+    state.sensors.humidity.outside.text = roundFixed(state.sensors.humidity.outside.percent, 1) .. '%'
+  end
+  if humidityInside ~= nil then
+    state.sensors.humidity.inside.raw = humidityInside
+    state.sensors.humidity.inside.percent = state.sensors.humidity.inside.raw / 1000
+    state.sensors.humidity.inside.text = roundFixed(state.sensors.humidity.inside.percent, 1) .. '%'
+  end
+
+  if temperatureOutside ~= nil and temperatureInside ~= nil then
+    local tempDifference = temperatureInside - temperatureOutside;
+    if tempDifference < 0 then
+      state.sensors.temperature.adjusted.raw = temperatureInside
+    else
+      if tempDifference > maxTempDifferenceBetweenInsideAndOutside then
+        tempDifference = maxTempDifferenceBetweenInsideAndOutside
+      end
+
+      state.sensors.temperature.adjusted.raw = temperatureOutside + ((tempDifference / maxTempDifferenceBetweenInsideAndOutside) * maxTempAdjustment)
+    end
+
+    state.sensors.temperature.adjusted.celsius = state.sensors.temperature.adjusted.raw / 100
+    state.sensors.temperature.adjusted.text = roundFixed(state.sensors.temperature.adjusted.celsius, 1) .. 'C'
+  end
+
+  if humidityOutside ~= nil and humidityInside ~= nil then
+    local humidityDifference = humidityInside - humidityOutside;
+    if humidityDifference < 0 then
+      humidityDifference = 0
+    end
+    if humidityDifference > maxHumidityDifferenceBetweenInsideAndOutside then
+      humidityDifference = maxHumidityDifferenceBetweenInsideAndOutside
+    end
+    state.sensors.humidity.adjusted.raw = humidityOutside + ((humidityDifference / maxHumidityDifferenceBetweenInsideAndOutside) * maxHumidityAdjustment)
+    state.sensors.humidity.adjusted.celsius = state.sensors.humidity.adjusted.raw / 100
+    state.sensors.humidity.adjusted.text = roundFixed(state.sensors.humidity.adjusted.celsius, 1) .. 'C'
   end
 end)
 
@@ -207,12 +285,12 @@ end, function()
     return
   end
 
-  if state.sensors.temperatureRaw == nil or state.sensors.humidityRaw == nil then
+  if state.sensors.temperature.adjusted.celsius == nil or state.sensors.humidity.adjusted.percent == nil then
     return nil, nil
   end
 
-  local temperature = state.sensors.temperatureRaw / 100
-  local humidity = state.sensors.humidityRaw / 1000
+  local temperature = state.sensors.temperature.adjusted.celsius
+  local humidity = state.sensors.humidity.adjusted.percent
   return temperature, humidity
 end)
 
