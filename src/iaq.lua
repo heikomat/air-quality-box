@@ -38,17 +38,17 @@ function calculateIaq(sensors, iaq)
       solution = 'heat'
     elseif sensors.temperature.adjusted.celsius > 27 then
       issue = 'warm2'
-      solution = 'cooling'
+      solution = 'cool'
     elseif sensors.temperature.adjusted.celsius > 25 then
       issue = 'warm1'
-      solution = 'cooling'
+      solution = 'cool'
     end
 
     if issue ~= nil then
       table.insert(iaq.issues, {
         issue = issue,
         solution = solution,
-        description = "Temperatur: " .. sensors.temperature.adjusted.text,
+        description = "Temp " .. sensors.temperature.adjusted.text,
         importance = (5 - iaq.sensorScores.temperature) * tempIssueWeight,
       })
     end
@@ -87,7 +87,7 @@ function calculateIaq(sensors, iaq)
       table.insert(iaq.issues, {
         issue = issue,
         solution = solution,
-        description = "Luftfeuchtigkeit: " .. sensors.humidity.adjusted.text,
+        description = "Hum. " .. sensors.humidity.adjusted.text,
         importance = (5 - iaq.sensorScores.humidity) * humidityIssueWeight
       })
     end
@@ -127,7 +127,7 @@ function calculateIaq(sensors, iaq)
       table.insert(iaq.issues, {
         issue = issue,
         solution = solution,
-        description = "TVOC-Gehalt: " .. sensors.tvoc.ppbText,
+        description = "TVOC " .. sensors.tvoc.ppbText,
         importance = (5 - iaq.sensorScores.temperature) * tvocIssueWeight
       })
     end
@@ -168,7 +168,7 @@ function calculateIaq(sensors, iaq)
       table.insert(iaq.issues, {
         issue = issue,
         solution = solution,
-        description = "CO2-Gehalt: " .. sensors.co2.text,
+        description = "CO2 " .. sensors.co2.text,
         importance = (5 - iaq.sensorScores.co2) * co2IssueWeight,
       })
     end
@@ -208,7 +208,7 @@ function calculateIaq(sensors, iaq)
       table.insert(iaq.issues, {
         issue = issue,
         solution = solution,
-        description = "PM10-Wert: " .. sensors.pm100.text,
+        description = "PM10 " .. sensors.pm100.text,
         importance = (5 - iaq.sensorScores.co2) * pm100IssueWeight,
       })
     end
