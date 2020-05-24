@@ -120,7 +120,7 @@ state = {
       text = nil,
     },
     issues = {},
-    mostImportantIssue = {},
+    mostImportantIssue = nil,
     sensorScores = {
       temperature = nil,
       humidity = nil,
@@ -257,8 +257,8 @@ bme280Timer:alarm(350 , tmr.ALARM_AUTO, function(timer)
       humidityDifference = maxHumidityDifferenceBetweenInsideAndOutside
     end
     state.sensors.humidity.adjusted.raw = humidityOutside + ((humidityDifference / maxHumidityDifferenceBetweenInsideAndOutside) * maxHumidityAdjustment)
-    state.sensors.humidity.adjusted.celsius = state.sensors.humidity.adjusted.raw / 100
-    state.sensors.humidity.adjusted.text = roundFixed(state.sensors.humidity.adjusted.celsius, 1) .. 'C'
+    state.sensors.humidity.adjusted.percent = state.sensors.humidity.adjusted.raw / 1000
+    state.sensors.humidity.adjusted.text = roundFixed(state.sensors.humidity.adjusted.percent, 1) .. '%'
   end
 end)
 
