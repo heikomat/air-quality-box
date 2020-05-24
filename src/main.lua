@@ -9,6 +9,7 @@ local maxTempAdjustment = -290 -- -2.9°C
 local maxHumidityDifferenceBetweenInsideAndOutside = 1 -- 3.0°C9°C
 local maxHumidityAdjustment = 9000 -- +9%
 i2c.setup(0, pinSDA, pinSCL, i2c.SLOW)
+bme280.setup();
 
 state = {
   wifi = {
@@ -118,14 +119,13 @@ state = {
       maxScore = nil,
       text = nil,
     },
-    recommendations = nil,
+    issues = {},
+    mostImportantIssue = {},
     sensorScores = {
       temperature = nil,
       humidity = nil,
       tvoc = nil,
       co2 = nil,
-      pm10 = nil,
-      pm25 = nil,
       pm100 = nil,
     }
   }
@@ -138,7 +138,7 @@ require 'iaq'
 require 'tools'
 require 'sgp30'
 require 'mh-z19'
-require 'pms5003'
+--require 'pms5003'
 require 'display'
 
 function unrequire(m)
@@ -197,12 +197,8 @@ end)
 local bme280Timer = tmr.create()
 bme280Timer:alarm(350 , tmr.ALARM_AUTO, function(timer)
 
-  local setup = bme280.setup()
   temperatureOutside, pressureOutside, humidityOutside = bme280.read()
-  i2c.setup(0, pinSCL, pinSDA, i2c.SLOW)
-  local setup2 = bme280.setup()
-  temperatureInside, pressureInside, humidityInside = bme280.read()
-  i2c.setup(0, pinSDA, pinSCL, i2c.SLOW)
+  temperatureInside, pressureInside, humidityInside = bme280.read(nil, true)
   if temperatureOutside ~= nil then
     state.sensors.temperature.outside.raw = temperatureOutside
     state.sensors.temperature.outside.celsius = state.sensors.temperature.outside.raw / 100
@@ -279,7 +275,7 @@ sgp30 = SGP30:new(nil, nil, function(eCO2, TVOCppb, TVOCmgm3, eCO2Baseline, TVOC
   state.debug.sgp30Baseline.secondsTilNextSave = secondsTilNextBaselineSave
   state.debug.sgp30Baseline.lastSaveWasSuccessful = lastBaselineSaveWasSuccessful
   state.debug.sgp30Baseline.lastSaveResult = lastBaselineSaveResult
-  checkPmsForceOn()
+  --checkPmsForceOn()
 end, function()
   if state == nil then
     return
@@ -302,9 +298,9 @@ mhz19 = MHZ19:new(2, function(co2)
   state.sensors.co2.raw = co2
   state.sensors.co2.ppm = co2
   state.sensors.co2.text = co2 .. 'ppm'
-  checkPmsForceOn()
+  --checkPmsForceOn()
 end)
-
+--[[
 pms5003 = PMS5003:new(function(pm10, pm25, pm100)
   if state == nil then
     return
@@ -340,6 +336,7 @@ function checkPmsForceOn()
     pms5003:stopForceOn()
   end
 end
+--]]
 
 -- don't refresh too often, as it is slow (~230ms) and might result in gpio-interrupt-callbacks not being fired
 displayTimer = tmr.create()
