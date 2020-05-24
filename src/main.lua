@@ -1,6 +1,6 @@
 --node.setcpufreq(node.CPU160MHZ)
 
-local version = 33;
+local version = 35;
 
 local pinSDA = 7
 local pinSCL = 5
@@ -138,7 +138,7 @@ require 'iaq'
 require 'tools'
 require 'sgp30'
 require 'mh-z19'
---require 'pms5003'
+require 'pms5003'
 require 'display'
 
 function unrequire(m)
