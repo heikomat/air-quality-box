@@ -209,7 +209,7 @@ function calculateIaq(sensors, iaq)
         issue = issue,
         solution = solution,
         description = "PM10 " .. sensors.pm100.text,
-        importance = (5 - iaq.sensorScores.co2) * pm100IssueWeight,
+        importance = (5 - iaq.sensorScores.pm100) * pm100IssueWeight,
       })
     end
   end
