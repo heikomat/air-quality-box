@@ -11,8 +11,6 @@ function PMS5003:new(pmsCallback, infoCallback)
   self.isForcedOn = false
   self.forcedOnReason = nil
 
-  self.cycleTotalTime = 1800
-  self.cycleMeasureTime = 15
   self.nextScheduledWakeup = 0
   self.nextScheduledSleep = 0
 
@@ -21,7 +19,7 @@ function PMS5003:new(pmsCallback, infoCallback)
 
   self:runCycle()
   self.runCycleTimer = tmr.create()
-  self.runCycleTimer:alarm(self.cycleTotalTime * 1000, tmr.ALARM_AUTO, function()
+  self.runCycleTimer:alarm(config.calibration.pmCycleSeconds * 1000, tmr.ALARM_AUTO, function()
     self:runCycle()
   end)
 
@@ -44,7 +42,7 @@ function PMS5003:new(pmsCallback, infoCallback)
       if isInCycleMeasure then
         nextMeasureStart = 0
       elseif nextMeasureStart < 0 then
-        nextMeasureStart = nextMeasureStart + self.cycleTotalTime
+        nextMeasureStart = nextMeasureStart + config.calibration.pmCycleSeconds
       end
 
       local isMeasuring = self.isAwake and self.warmingUp == false
@@ -63,7 +61,7 @@ end
 function PMS5003:runCycle()
   local now = tmr.time()
   self.nextScheduledWakeup = now
-  self.nextScheduledSleep = now + (PMS5003WarmupSeconds + self.cycleMeasureTime)
+  self.nextScheduledSleep = now + (PMS5003WarmupSeconds + config.calibration.pmCycleMeasureSeconds)
 end
 
 function PMS5003:TwoBytesToNumber(byte1, byte2)
