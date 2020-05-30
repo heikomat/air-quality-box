@@ -1,6 +1,5 @@
 nodemcu-firmware
-wifi_credentials.txt
-mqtt_credentials.txt
+config.json
 lfs.img
 firmware.bin
 output.txt

@@ -4,4 +4,4 @@
 ./tools/esptool.py write_flash -fm dio 0x00000 firmware.bin
 
 # add the LFS partition and upload the lfs image
-./tools/nodemcu-partition.py --lfs_size 64k
+./tools/nodemcu-partition.py --lfs_size 96k
