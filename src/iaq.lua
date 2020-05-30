@@ -197,10 +197,10 @@ function calculateIaq(sensors, iaq)
     issue = nil
     solution = nil
     if iaq.sensorScores.pm100 <= 1.5 then
-      issue = 'polluted_2'
+      issue = 'pollution2'
       solution = 'close_window'
     elseif iaq.sensorScores.pm100 <= 2.5 then
-      issue = 'polluted_1'
+      issue = 'pollution1'
       solution = 'close_window'
     end
 
