@@ -261,6 +261,7 @@ bme280Timer:alarm(350 , tmr.ALARM_AUTO, function(timer)
   end
 
   if temperatureOutside ~= nil and temperatureInside ~= nil then
+    --[[
     local tempDifference = temperatureInside - temperatureOutside;
     if tempDifference < 0 then
       state.sensors.temperature.adjusted.raw = temperatureInside
@@ -271,12 +272,14 @@ bme280Timer:alarm(350 , tmr.ALARM_AUTO, function(timer)
 
       state.sensors.temperature.adjusted.raw = temperatureOutside + ((tempDifference / (config.calibration.maxTempDelta * 100)) * (config.calibration.maxTempAdjust * 100))
     end
-
+    ]]
+    state.sensors.temperature.adjusted.raw = temperatureOutside + (config.calibration.maxTempAdjust * 100)
     state.sensors.temperature.adjusted.celsius = state.sensors.temperature.adjusted.raw / 100
     state.sensors.temperature.adjusted.text = roundFixed(state.sensors.temperature.adjusted.celsius, 1) .. 'C'
   end
 
   if humidityOutside ~= nil and humidityInside ~= nil then
+    --[[
     local humidityDifference = humidityInside - humidityOutside;
     if humidityDifference < 0 then
       humidityDifference = 0
@@ -285,6 +288,8 @@ bme280Timer:alarm(350 , tmr.ALARM_AUTO, function(timer)
       humidityDifference = config.calibration.maxHumidityDelta * 1000
     end
     state.sensors.humidity.adjusted.raw = humidityOutside + ((humidityDifference / (config.calibration.maxHumidityDelta * 1000)) * (config.calibration.maxHumidityAdjust * 1000))
+    ]]
+    state.sensors.humidity.adjusted.raw = humidityOutside + (config.calibration.maxHumidityAdjust * 1000)
     state.sensors.humidity.adjusted.percent = state.sensors.humidity.adjusted.raw / 1000
     state.sensors.humidity.adjusted.text = roundFixed(state.sensors.humidity.adjusted.percent, 1) .. '%'
   end
