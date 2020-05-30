@@ -1,0 +1,21 @@
+{
+  "calibration": {
+    "maxTempDelta": 3.1,
+    "maxTempAdjust": -2.9,
+    "maxHumidityDelta": 1,
+    "maxHumidityAdjust": 9,
+    "tvocFactor": 1,
+    "co2Factor": 1
+  },
+  "wifi": {
+    "enabled": false,
+    "ssid": "",
+    "password": ""
+  },
+  "mqtt": {
+    "server": "",
+    "clientId": "",
+    "username": "",
+    "password": ""
+  }
+}

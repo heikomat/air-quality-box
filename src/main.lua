@@ -1,13 +1,25 @@
 node.setcpufreq(node.CPU160MHZ)
 
-local version = 36;
+local version = 37;
+config = {
+  calibration = {
+    maxTempDelta = 3.1,
+    maxTempAdjust = -2.9,
+    maxHumidityDelta = 1,
+    maxHumidityAdjust = 9,
+    tvocFactor = 1,
+    co2Factor = 1
+  }
+}
+
+if file.open('config.json') ~= nil then
+  local content = file.read(2048);
+  config = sjson.decoder():write(content)
+  file.close()
+end
 
 local pinSDA = 7
 local pinSCL = 5
-local maxTempDifferenceBetweenInsideAndOutside = 300 -- 3.0°C
-local maxTempAdjustment = -290 -- -2.9°C
-local maxHumidityDifferenceBetweenInsideAndOutside = 1 -- 3.0°C9°C
-local maxHumidityAdjustment = 9000 -- +9%
 i2c.setup(0, pinSDA, pinSCL, i2c.SLOW)
 bme280.setup();
 
@@ -71,12 +83,15 @@ state = {
     },
     tvoc = {
       ppbRaw = nil,
+      ppbAdjusted = nil,
       ppbText = nil,
       mgm3Raw = nil,
+      mgm3Adjusted = nil,
       mgm3Text = nil,
     },
     co2 = {
       raw = nil,
+      adjusted = nil,
       ppm = nil,
       text = nil,
     },
@@ -154,16 +169,15 @@ state.wifi.connecting = initWifi(function()
     -- connection acquired
     state.mqtt.connected = true
     state.mqtt.connecting = false
-    local clientId = getMqttClientId()
-    publishMqtt('air_quality/' .. clientId .. '/connected', version, false)
-    subscribeMqtt('air_quality/' .. clientId .. '/command/#')
+    publishMqtt('air_quality/' .. config.mqtt.clientId .. '/connected', version, false)
+    subscribeMqtt('air_quality/' .. config.mqtt.clientId .. '/command/#')
 
     -- also send print outputs to mqtt
     print = function(...)
       old_print(...)
       if state.mqtt.connected then
         local jsonData = sjson.encoder({...}):read(2048)
-        publishMqtt('air_quality/' .. clientId .. '/console', jsonData, false)
+        publishMqtt('air_quality/' .. config.mqtt.clientId .. '/console', jsonData, false)
       end
     end
   end, function()
@@ -174,22 +188,34 @@ state.wifi.connecting = initWifi(function()
     state.mqtt.connected = false
     state.mqtt.connecting = true
   end, function(topic, message)
-    local clientId = getMqttClientId()
-    if topic == 'air_quality/' .. clientId .. '/command/update_lfs' then
+    if topic == 'air_quality/' .. config.mqtt.clientId .. '/command/update_lfs' then
       local updateOptions = sjson.decoder():write(message)
       unregisterEverything()
       clientId = nil
       message = nil
       LFS.HTTP_OTA(updateOptions.host, updateOptions.port, updateOptions.dir, updateOptions.imageName)
-    elseif topic == 'air_quality/' .. clientId .. '/command/sleep_pms' then
+    elseif topic == 'air_quality/' .. config.mqtt.clientId .. '/command/sleep_pms' then
       pms5003:sleep()
-    elseif topic == 'air_quality/' .. clientId .. '/command/wakeup_pms' then
+    elseif topic == 'air_quality/' .. config.mqtt.clientId .. '/command/wakeup_pms' then
       pms5003:wakeup()
-    elseif topic == 'air_quality/' .. clientId .. '/command/clear_calibration' then
+    elseif topic == 'air_quality/' .. config.mqtt.clientId .. '/command/clear_calibration' then
       sgp30:deleteAQIBaselineFile()
       node.restart()
-    elseif topic == 'air_quality/' .. clientId .. '/command/reboot' then
+    elseif topic == 'air_quality/' .. config.mqtt.clientId .. '/command/reboot' then
       node.restart()
+    elseif topic == 'air_quality/' .. config.mqtt.clientId .. '/command/update_calibration' then
+      local updateOptions = sjson.decoder():write(message)
+      for key, value in pairs(updateOptions) do
+        config.calibration[key] = value
+      end
+      local newConfigJsonString = sjson.encoder(config):read(2048)
+      fdWrite = file.open('config.json', 'w+')
+      if fdWrite ~= nil then
+        fdWrite:write(newConfigJsonString)
+        fdWrite:close()
+      else
+        print('couldnt open config.json for writing')
+      end
     end
   end)
 end)
@@ -237,11 +263,11 @@ bme280Timer:alarm(350 , tmr.ALARM_AUTO, function(timer)
     if tempDifference < 0 then
       state.sensors.temperature.adjusted.raw = temperatureInside
     else
-      if tempDifference > maxTempDifferenceBetweenInsideAndOutside then
-        tempDifference = maxTempDifferenceBetweenInsideAndOutside
+      if tempDifference > config.calibration.maxTempDelta * 100 then
+        tempDifference = config.calibration.maxTempDelta * 100
       end
 
-      state.sensors.temperature.adjusted.raw = temperatureOutside + ((tempDifference / maxTempDifferenceBetweenInsideAndOutside) * maxTempAdjustment)
+      state.sensors.temperature.adjusted.raw = temperatureOutside + ((tempDifference / (config.calibration.maxTempDelta * 100)) * (config.calibration.maxTempAdjust * 100))
     end
 
     state.sensors.temperature.adjusted.celsius = state.sensors.temperature.adjusted.raw / 100
@@ -253,10 +279,10 @@ bme280Timer:alarm(350 , tmr.ALARM_AUTO, function(timer)
     if humidityDifference < 0 then
       humidityDifference = 0
     end
-    if humidityDifference > maxHumidityDifferenceBetweenInsideAndOutside then
-      humidityDifference = maxHumidityDifferenceBetweenInsideAndOutside
+    if humidityDifference > config.calibration.maxHumidityDelta * 1000 then
+      humidityDifference = config.calibration.maxHumidityDelta * 1000
     end
-    state.sensors.humidity.adjusted.raw = humidityOutside + ((humidityDifference / maxHumidityDifferenceBetweenInsideAndOutside) * maxHumidityAdjustment)
+    state.sensors.humidity.adjusted.raw = humidityOutside + ((humidityDifference / (config.calibration.maxHumidityDelta * 1000)) * (config.calibration.maxHumidityAdjust * 1000))
     state.sensors.humidity.adjusted.percent = state.sensors.humidity.adjusted.raw / 1000
     state.sensors.humidity.adjusted.text = roundFixed(state.sensors.humidity.adjusted.percent, 1) .. '%'
   end
@@ -264,10 +290,12 @@ end)
 
 sgp30 = SGP30:new(nil, nil, function(eCO2, TVOCppb, TVOCmgm3, eCO2Baseline, TVOCBaseline, secondsSincaLastBaselineSave, secondsTilNextBaselineSave, lastBaselineSaveWasSuccessful, lastBaselineSaveResult)
   state.sensors.tvoc.ppbRaw = TVOCppb
-  state.sensors.tvoc.ppbText = TVOCppb .. 'ppb'
+  state.sensors.tvoc.ppbAdjusted = state.sensors.tvoc.ppbRaw * config.calibration.tvocFactor
+  state.sensors.tvoc.ppbText = state.sensors.tvoc.ppbAdjusted .. 'ppb'
 
   state.sensors.tvoc.mgm3Raw = TVOCmgm3
-  state.sensors.tvoc.mgm3Text = TVOCmgm3 .. 'mg/m3'
+  state.sensors.tvoc.mgm3Adjusted = state.sensors.tvoc.mgm3Raw * config.calibration.tvocFactor
+  state.sensors.tvoc.mgm3Text = state.sensors.tvoc.mgm3Adjusted .. 'mg/m3'
 
   state.debug.sgp30Baseline.eCO2 = eCO2Baseline
   state.debug.sgp30Baseline.TVOC = TVOCBaseline
@@ -296,8 +324,9 @@ mhz19 = MHZ19:new(2, function(co2)
   end
 
   state.sensors.co2.raw = co2
-  state.sensors.co2.ppm = co2
-  state.sensors.co2.text = co2 .. 'ppm'
+  state.sensors.co2.adjusted = state.sensors.co2.raw * config.calibration.co2Factor
+  state.sensors.co2.ppm = state.sensors.co2.adjusted
+  state.sensors.co2.text = state.sensors.co2.ppm .. 'ppm'
   checkPmsForceOn()
 end)
 
@@ -361,11 +390,14 @@ mqttTimer:alarm(10000 , tmr.ALARM_AUTO, function(timer)
   end
 
   if state.mqtt.connected then
-    local clientId = getMqttClientId()
     local jsonData = sjson.encoder(state.sensors):read(2048)
-    publishMqtt('air_quality/' .. clientId .. '/sensors', jsonData, false)
+    publishMqtt('air_quality/' .. config.mqtt.clientId .. '/sensors', jsonData, false)
     jsonData = sjson.encoder(state.iaq):read(2048)
-    publishMqtt('air_quality/' .. clientId .. '/iaq', jsonData, false)
+    publishMqtt('air_quality/' .. config.mqtt.clientId .. '/iaq', jsonData, false)
+    jsonData = sjson.encoder(state.debug):read(2048)
+    publishMqtt('air_quality/' .. config.mqtt.clientId .. '/debug', jsonData, false)
+    jsonData = sjson.encoder(config.calibration):read(2048)
+    publishMqtt('air_quality/' .. config.mqtt.clientId .. '/calibration', jsonData, false)
   end
 end)
 
@@ -407,6 +439,7 @@ function unregisterEverything()
   bme280Timer = nil
   print = old_print
   state = nil
+  config = nil
   initWifi = nil
   connectMqtt = nil
   updateIaq = nil

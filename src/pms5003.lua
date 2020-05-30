@@ -12,7 +12,7 @@ function PMS5003:new(pmsCallback, infoCallback)
   self.forcedOnReason = nil
 
   self.cycleTotalTime = 1800
-  self.cycleMeasureTime = 10
+  self.cycleMeasureTime = 15
   self.nextScheduledWakeup = 0
   self.nextScheduledSleep = 0
 

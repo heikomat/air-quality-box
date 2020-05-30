@@ -1,15 +1,10 @@
 function initWifi(callback)
-  local ssid, password
-  if file.open('wifi_credentials.txt') ~= nil then
-      ssid = string.sub(file.readline(), 1, -2) -- to remove newline character
-      password = string.sub(file.readline(), 1, -2) -- to remove newline character
-      file.close()
-  else
-      return false
+  if config == nil or config.wifi == nil or config.wifi.enabled ~= true then
+    return
   end
 
   wifi.setmode(wifi.STATION)
-  wifi.sta.config({ssid=ssid, pwd=password})
+  wifi.sta.config({ssid=config.wifi.ssid, pwd=config.wifi.password})
   wifi.sta.autoconnect(1)
 
   -- wait for the wifi connection to be established

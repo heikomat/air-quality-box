@@ -1,25 +1,17 @@
 local mqttClient
-local clientId
 
 function connectMqtt(connectionAcquiredCallback, connectionLostCallback, onMessageCallback)
-  local server, username, password
-  if file.open('mqtt_credentials.txt') ~= nil then
-    server = string.sub(file.readline(), 1, -2) -- to remove newline character
-    clientId = string.sub(file.readline(), 1, -2) -- to remove newline character
-    username = string.sub(file.readline(), 1, -2) -- to remove newline character
-    password = string.sub(file.readline(), 1, -2) -- to remove newline character
-    file.close()
-  else
-      return false
+  if config == nil or config.mqtt == nil then
+    return
   end
 
-  mqttClient=mqtt.Client(clientId, 60, username, password)
+  mqttClient=mqtt.Client(config.mqtt.clientId, 60, config.mqtt.username, config.mqtt.password)
 
-  mqttClient:on("offline", function(mqttClient)
+  mqttClient:on('offline', function(mqttClient)
     if connectionLostCallback ~= nil then
       connectionLostCallback()
     end
-    _connect(mqttClient, server, connectionAcquiredCallback)
+    _connect(mqttClient, connectionAcquiredCallback)
   end)
 
   if onMessageCallback ~= nil then
@@ -28,11 +20,11 @@ function connectMqtt(connectionAcquiredCallback, connectionLostCallback, onMessa
     end)
   end
 
-  _connect(mqttClient, server, connectionAcquiredCallback)
+  _connect(mqttClient, connectionAcquiredCallback)
   return true
 end
 
-function _connect(mqttClient, server, connectionAcquiredCallback)
+function _connect(mqttClient, connectionAcquiredCallback)
 
   local connectionSuccessfulCallback = function(mqttClient)
     if connectionAcquiredCallback ~= nil then
@@ -42,16 +34,16 @@ function _connect(mqttClient, server, connectionAcquiredCallback)
 
   local connectionFailedCallback = function()
     tmr.create():alarm(1000, tmr.ALARM_SINGLE, function()
-      _connect(mqttClient, server, connectionAcquiredCallback)
+      _connect(mqttClient, config.mqtt.server, connectionAcquiredCallback)
     end)
   end
 
-  mqttClient:connect(server, connectionSuccessfulCallback, connectionFailedCallback)
+  mqttClient:connect(config.mqtt.server, connectionSuccessfulCallback, connectionFailedCallback)
 end
 
 function publishMqtt(channel, message, suffixChannelWithClientId)
   if suffixChannelWithClientId == true then
-    channel = channel .. '/' .. clientId
+    channel = channel .. '/' .. config.mqtt.clientId
   end
   return mqttClient:publish(channel, message, 0, 0)
 end
@@ -60,16 +52,11 @@ function subscribeMqtt(topic, onMessageCallback)
   mqttClient:subscribe(topic, 0)
 end
 
-function getMqttClientId()
-  return clientId
-end
-
 function unregisterMqtt()
   connectMqtt = nil
   _connect = nil
   publishMqtt = nil
   subscribeMqtt = nil
-  getMqttClientId = nil
   unregisterMqtt = nil
   mqttClient:close()
   mqttClient = nil
