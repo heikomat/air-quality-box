@@ -1,5 +1,3 @@
 nodemcu-firmware
 config.json
-lfs.img
-firmware.bin
 output.txt
