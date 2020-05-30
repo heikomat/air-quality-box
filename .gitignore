@@ -1,3 +1,5 @@
 nodemcu-firmware
 config.json
+config_blue.json
+config_green.json
 output.txt
