@@ -8,7 +8,9 @@ config = {
     maxHumidityDelta = 1,
     maxHumidityAdjust = 9,
     tvocFactor = 1,
-    co2Factor = 1
+    co2Factor = 1,
+    pmCycleSeconds = 1800,
+    pmCycleMeasureSeconds = 15
   }
 }
 
