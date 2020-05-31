@@ -10,7 +10,7 @@ Es kann einer von zwei Zuständen angezeigt werden:
 # Wichtige Hinweise
 
 **TLDR:**
-- Die Box nach möglichkeit nicht in die pralle Sonne stellen.
+- Die Box nach Möglichkeit nicht in die pralle Sonne stellen.
 - Die Box sollte zur Kalibrierung mindestens alle paar Tage für eine Weile (10 Minuten oder mehr) draußen oder an einem offenen Fenster stehen.
 - Probleme, die schlimmer für die Luftqualität sind, haben bei der Anzeige eine höhere Gewichtung als andere (z.b. sind CO2-Probleme wichtiger als Temperatur-Probleme).
 
