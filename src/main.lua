@@ -218,6 +218,16 @@ state.wifi.connecting = initWifi(function()
       else
         print('couldnt open config.json for writing')
       end
+    elseif topic == 'air_quality/' .. config.mqtt.clientId .. '/command/set_full_config' then
+      config = sjson.decoder():write(message)
+      local newConfigJsonString = sjson.encoder(config):read(2048)
+      fdWrite = file.open('config.json', 'w+')
+      if fdWrite ~= nil then
+        fdWrite:write(newConfigJsonString)
+        fdWrite:close()
+      else
+        print('couldnt open config.json for writing')
+      end
     end
   end)
 end)
